@@ -45,7 +45,7 @@ a.item:focus-visible{outline:3px solid var(--pu);outline-offset:2px}
 </div>
 <script>
 /* Меню берётся из menu.json — того же файла, что и для кнопок в боте. */
-const FALLBACK = { sections: [ { title: 'ЕГЭ · Задание 3', trainers: [ { file: 'so.html', icon: 'С.О.', title: 'Степени окисления', about: '30 заданий: простые, средние, сложные · с разбором' } ] } ] };
+const FALLBACK = { exams: [ { title: 'ЕГЭ', tasks: [ { title: 'Задание №3', trainers: [ { file: 'so.html', icon: 'С.О.', title: 'Степени окисления', about: '30 заданий: простые, средние, сложные · с разбором' } ] } ] } ] };
 
 const tg = window.Telegram && window.Telegram.WebApp;
 if (tg) { try { tg.ready(); tg.expand(); if (tg.BackButton) tg.BackButton.hide(); } catch (e) {} }
@@ -56,16 +56,20 @@ try {
 } catch (e) {}
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-function render(menu) {
-  document.getElementById('menu').innerHTML = menu.sections.map(g =>
-    '<section class="group"><h2>' + esc(g.title) + (g.subtitle ? ' · ' + esc(g.subtitle) : '') + '</h2><div class="list">' +
-    (g.trainers || []).map(it => !it.file
-      ? '<div class="item soon"><div class="icon">' + esc(it.icon || '…') + '</div><div class="txt"><b>' + esc(it.title) + '</b><small>' + esc(it.about || 'Скоро') + '</small></div><span class="go">скоро</span></div>'
-      : '<a class="item" href="' + esc(it.file) + '"><div class="icon">' + esc(it.icon || '→') + '</div><div class="txt"><b>' + esc(it.title) + '</b><small>' + esc(it.about || '') + '</small></div><span class="go">Начать</span></a>'
-    ).join('') + '</div></section>'
-  ).join('');
+function card(it) {
+  return !it.file
+    ? '<div class="item soon"><div class="icon">' + esc(it.icon || '…') + '</div><div class="txt"><b>' + esc(it.title) + '</b><small>' + esc(it.about || 'Скоро') + '</small></div><span class="go">скоро</span></div>'
+    : '<a class="item" href="' + esc(it.file) + '"><div class="icon">' + esc(it.icon || '→') + '</div><div class="txt"><b>' + esc(it.title) + '</b><small>' + esc(it.about || '') + '</small></div><span class="go">Начать</span></a>';
 }
-fetch('menu.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject()).then(m => render(m && m.sections ? m : FALLBACK)).catch(() => render(FALLBACK));
+function render(menu) {
+  let html = '';
+  (menu.exams || []).forEach(ex => (ex.tasks || []).forEach(t => {
+    if (!(t.trainers || []).length) return;
+    html += '<section class="group"><h2>' + esc(ex.title) + ' · ' + esc(t.title) + (t.subtitle ? ' · ' + esc(t.subtitle) : '') + '</h2><div class="list">' + t.trainers.map(card).join('') + '</div></section>';
+  }));
+  document.getElementById('menu').innerHTML = html;
+}
+fetch('menu.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject()).then(m => render(m && m.exams ? m : FALLBACK)).catch(() => render(FALLBACK));
 </script>
 </body>
 </html>
