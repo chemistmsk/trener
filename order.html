@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Расставь по порядку</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Unbounded:wght@600&display=swap" rel="stylesheet">
+<style>
+
+:root{--pu:#8153EC;--pu-d:#6a3fd6;--lv:#EFEAFF;--lv2:#E3DAFF;--ln:#D9CCFF;--ink:#1d1b26;--grey:#737373;--ok:#1f9d6b;--ok-bg:#e3f6ee;--bad:#e0475b;--bad-bg:#fde8eb;--bg:#f7f5ff;--card:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Montserrat,system-ui,sans-serif;font-weight:500}
+.wrap{max-width:720px;margin:0 auto;padding:24px 16px 48px}
+.back{display:inline-flex;gap:6px;color:var(--pu);font-weight:600;font-size:14px;text-decoration:none;margin-bottom:14px}
+.head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.head h1{font-family:Unbounded,Montserrat,sans-serif;font-weight:600;color:var(--pu);font-size:24px;margin:0}
+.head span{color:#be9fff;font-size:15px}
+.line{height:3px;width:220px;border-radius:2px;background:linear-gradient(90deg,var(--pu),#c553ec);margin-bottom:22px}
+.card{background:var(--card);border-radius:18px;padding:24px;box-shadow:0 2px 0 var(--ln),0 10px 30px rgba(129,83,236,.08)}
+.pill{display:inline-block;font-family:Unbounded,Montserrat,sans-serif;font-size:13px;color:var(--pu);background:var(--lv);border:1.5px solid var(--pu);border-radius:7px;padding:4px 10px;box-shadow:3px -2px 0 var(--lv2)}
+label{display:block;font-weight:600;margin:18px 0 6px}
+input.name{width:100%;font:inherit;font-size:16px;padding:12px 14px;border:1.5px solid var(--ln);border-radius:12px;outline:none}
+input.name:focus{border-color:var(--pu)}
+.rules{margin:16px 0 0;padding-left:20px;line-height:1.6}
+.rules b{color:var(--pu)}
+.btn{font:inherit;font-weight:700;font-size:16px;border:0;border-radius:12px;padding:13px 22px;cursor:pointer;background:var(--pu);color:#fff}
+.btn:hover{background:var(--pu-d)}
+.btn.ghost{background:var(--lv);color:var(--pu)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:20px}
+.err{color:var(--bad);font-size:14px;margin-top:8px;min-height:18px}
+.top{display:flex;justify-content:space-between;align-items:center;font-size:14px;color:var(--grey);margin-bottom:8px}
+.bar{height:8px;background:var(--lv);border-radius:6px;overflow:hidden;margin-bottom:18px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--pu),#c553ec);width:0;transition:width .3s}
+.lvl{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--pu);background:var(--lv);padding:4px 9px;border-radius:20px}
+.q{text-align:center;margin:4px 0 10px;color:var(--grey);font-size:15px}
+.el{display:flex;justify-content:center;align-items:center;gap:14px;margin:6px 0 20px}
+.sym{font-size:44px;font-weight:700;color:var(--pu);background:var(--lv);border-radius:14px;padding:6px 16px;box-shadow:inset 0 -3px 0 var(--pu);line-height:1.2}
+.sym sup{font-size:.45em}
+.el small{display:block;color:var(--grey);font-size:14px}
+.el b{font-size:18px}
+/* layers */
+.scheme{display:flex;align-items:flex-start;justify-content:center;gap:6px;font-weight:700}
+.nuc{color:var(--pu);font-size:24px;height:84px;display:flex;align-items:center;margin-right:2px}
+.shell{display:flex;flex-direction:column;align-items:center;gap:6px}
+.arc{align-self:flex-start;width:23px;height:84px;border-right:3px solid var(--pu);border-radius:0 50% 50% 0 / 0 50% 50% 0;opacity:.55}
+.shell .cell{width:46px;height:44px;font-size:20px}
+.cell{width:56px;height:52px;text-align:center;font:700 22px Montserrat,sans-serif;border:1.5px solid var(--ln);border-radius:12px;outline:none;color:var(--ink);background:#fff}
+.cell:focus{border-color:var(--pu)}
+.cell.right{border-color:var(--ok);background:var(--ok-bg)}
+.cell.wrong{border-color:var(--bad);background:var(--bad-bg)}
+.lwrap{overflow-x:auto;padding:4px 2px 8px;-webkit-overflow-scrolling:touch}
+.ladder{--c:32px;display:grid;grid-template-columns:repeat(19,var(--c));grid-auto-rows:var(--c);width:max-content;margin:0 auto}
+.ll{display:flex;align-items:center;justify-content:flex-end;padding-right:5px;font-weight:700;font-size:13px;color:var(--ink);white-space:nowrap}
+.orb{width:var(--c);height:var(--c);border:0;outline:1.5px solid var(--pu);outline-offset:-.75px;background:#fff;font:700 16px Montserrat,sans-serif;color:var(--pu);cursor:pointer;padding:0;letter-spacing:-2px;display:grid;place-items:center}
+.orb:hover{background:var(--lv)}
+.orb .ar{height:80%;width:auto;stroke:currentColor;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.orb .pair{display:flex;gap:1px;height:100%;align-items:center;justify-content:center}
+.orb:focus-visible{outline:3px solid #c553ec;z-index:1}
+.orb:disabled{cursor:default}
+.orb.right{outline-color:var(--ok);background:var(--ok-bg);color:var(--ok);z-index:1}
+.orb.wrong{outline-color:var(--bad);background:var(--bad-bg);color:var(--bad);z-index:2}
+.ll.right{color:var(--ok)} .ll.wrong{color:var(--bad)}
+.mini{--c:20px;margin-top:10px}
+.mini .orb{font-size:11px;outline-color:var(--ok);color:var(--ok);background:#fff;letter-spacing:-1px}
+.mini .ll{font-size:10px;padding-right:3px}
+.swipe{display:none;font-size:12px;color:var(--grey);text-align:center}
+@media (max-width:560px){.ladder{--c:26px}.orb{font-size:13px}.swipe{display:block}}
+/* config */
+.subs{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
+.sub{display:flex;flex-direction:column;align-items:center;gap:4px}
+.sub span{font-weight:700;font-size:16px}
+.sub em{font-style:normal;font-size:11px;color:var(--grey)}
+.sub .cell{width:100%;max-width:58px;height:48px;font-size:20px}
+.order{font-size:12px;color:var(--grey);text-align:center;margin-top:8px}
+.preview{text-align:center;font-size:20px;font-weight:600;margin-top:14px;min-height:30px;letter-spacing:.3px}
+.fb{margin-top:18px;border-radius:12px;padding:14px 16px;line-height:1.55;display:none}
+.fb.ok{display:block;background:var(--ok-bg)} .fb.bad{display:block;background:var(--bad-bg)}
+.fb b.h{display:block;margin-bottom:2px}
+.fb.ok b.h{color:var(--ok)} .fb.bad b.h{color:var(--bad)}
+.hint{font-size:13px;color:var(--grey);margin-top:12px;text-align:center}
+.res-name{font-size:18px;font-weight:700}
+.res-meta{color:var(--grey);font-size:14px;margin-top:4px}
+.score{display:flex;align-items:center;gap:20px;margin:22px 0;flex-wrap:wrap}
+.score .big{font-family:Unbounded,Montserrat,sans-serif;font-size:64px;color:var(--pu);line-height:1}
+.score .big small{font-size:.45em;color:var(--grey)}
+.score .verdict{font-size:18px;font-weight:700}
+.score .pct{color:var(--grey);font-size:14px;margin-top:4px}
+.grid{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin-bottom:20px}
+.grid div{aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff}
+.grid .g{background:var(--ok)} .grid .r{background:var(--bad)}
+.mist h3{font-size:15px;margin:0 0 8px;color:var(--pu)}
+.mist table{width:100%;border-collapse:collapse;font-size:14px}
+.mist td,.mist th{border:1px solid var(--ln);padding:6px 8px;text-align:left;vertical-align:top}
+.mist td{overflow-wrap:anywhere}
+.mist th{background:var(--lv);color:var(--pu)}
+.mist .no{color:var(--bad);font-weight:600} .mist .yes{color:var(--ok);font-weight:600}
+.perfect{background:var(--ok-bg);color:var(--ok);font-weight:700;border-radius:12px;padding:12px 16px}
+.foot{font-size:12px;color:var(--grey);margin-top:16px}
+.hidden{display:none}
+@media (max-width:560px){
+  .subs{grid-template-columns:repeat(4,1fr)}
+  .card{padding:18px}
+  .cell{width:48px;height:48px;font-size:20px}
+  .score .big{font-size:52px}
+  .grid{gap:4px}
+}
+
+.task{font-size:16px;line-height:1.5;margin:4px 0 16px}
+.task b{color:var(--pu)}
+.chips2{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.ech{font:700 22px Montserrat,sans-serif;min-width:76px;padding:12px 10px;border-radius:14px;border:1.5px solid var(--ln);background:#fff;color:var(--ink);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
+.ech small{font-size:11px;font-weight:600;color:var(--grey)}
+.ech:hover{border-color:var(--pu)}
+.ech.sel{background:var(--pu);border-color:var(--pu);color:#fff}
+.ech.sel small{color:#e8dfff}
+.ech .badge{position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;background:#c553ec;color:#fff;font-size:12px;display:grid;place-items:center}
+.ech.right{background:var(--ok);border-color:var(--ok);color:#fff}
+.ech.wrong{background:var(--bad);border-color:var(--bad);color:#fff}
+.ech.missed{border:2px dashed var(--ok)}
+.ech.right small,.ech.wrong small{color:#fff}
+.ech:disabled{cursor:default}
+.slots{display:flex;justify-content:center;align-items:center;gap:8px;margin:18px 0 4px;flex-wrap:wrap}
+.slot{min-width:64px;height:52px;border-radius:12px;border:1.5px dashed var(--ln);display:grid;place-items:center;font-size:20px;font-weight:700;color:var(--ink);background:var(--bg)}
+.slot.f{border-style:solid;border-color:var(--pu);background:var(--lv);color:var(--pu)}
+.slot.right{border-color:var(--ok);background:var(--ok-bg);color:var(--ok)}
+.slot.wrong{border-color:var(--bad);background:var(--bad-bg);color:var(--bad)}
+.arrow{color:var(--grey);font-size:18px}
+.mist td{overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← Все тренажёры</a>
+  <div class="head"><h1>Расставь по порядку</h1><span>тренажёр</span></div>
+  <div class="line"></div>
+
+  <section id="start" class="card">
+    <span class="pill">Как это работает</span>
+    <ol class="rules"><li><b>30 заданий</b>: 10 простых, 10 средних, 10 сложных</li><li>Даны три элемента — <b>нажимай на них по порядку</b>, как требует условие</li><li>Простое — радиус и ЭО, среднее — металлические, неметаллические, окислительные и восстановительные свойства, сложное — оксиды, гидроксиды, ЛВС, валентность и С.О.</li><li>После ответа — разбор, в конце сделай <b>скриншот результата</b></li></ol>
+    <label for="name">Имя и фамилия</label>
+    <input class="name" type="text" id="name" placeholder="Например, Иван Петров" autocomplete="off">
+    <div class="err" id="nameErr"></div>
+    <div class="row"><button class="btn" id="go">Начать</button></div>
+  </section>
+
+  <section id="quiz" class="card hidden">
+    <div class="top"><span id="num"></span><span class="lvl" id="lvl"></span></div>
+    <div class="bar"><i id="bar"></i></div>
+    <div class="task" id="task"></div>
+    <div class="chips2" id="chips"></div>
+    <div id="slots"></div>
+    <div class="err" id="qErr"></div>
+    <div class="fb" id="fb"></div>
+    <div class="row" style="justify-content:center">
+      <button class="btn" id="check">Проверить</button>
+      <button class="btn hidden" id="next">Дальше</button>
+    </div>
+    <div class="hint" id="hintline"></div>
+  </section>
+
+  <section id="result" class="card hidden">
+    <span class="pill">Результат</span>
+    <div style="margin-top:16px"><div class="res-name" id="rName"></div><div class="res-meta" id="rMeta"></div></div>
+    <div class="score"><div class="big" id="rScore"></div><div><div class="verdict" id="rVerdict"></div><div class="pct" id="rPct"></div></div></div>
+    <div class="grid" id="rGrid"></div>
+    <div class="mist" id="rMist"></div>
+    <div class="foot">Сделай скриншот этого экрана и отправь преподавателю</div>
+    <div class="row"><button class="btn ghost" id="again">Пройти ещё раз</button></div>
+  </section>
+</div>
+
+<script>
+const MODE='order'; // 'order' — расставь по порядку, 'choose' — выбери три
+const ROM=['','I','II','III','IV','V','VI','VII','VIII'];
+// s, имя, период, группа (номер), блок, металл (true/false/null — спорный), образует ЛВС (true/false/null)
+const RAW=[
+['H','водород',1,1,'s',false,null],
+['Li','литий',2,1,'s',true,false],['Be','бериллий',2,2,'s',true,false],['B','бор',2,3,'p',false,null],['C','углерод',2,4,'p',false,true],['N','азот',2,5,'p',false,true],['O','кислород',2,6,'p',false,true],['F','фтор',2,7,'p',false,true],
+['Na','натрий',3,1,'s',true,false],['Mg','магний',3,2,'s',true,false],['Al','алюминий',3,3,'p',true,false],['Si','кремний',3,4,'p',false,true],['P','фосфор',3,5,'p',false,true],['S','сера',3,6,'p',false,true],['Cl','хлор',3,7,'p',false,true],
+['K','калий',4,1,'s',true,false],['Ca','кальций',4,2,'s',true,false],
+['Sc','скандий',4,3,'d',true,false],['Ti','титан',4,4,'d',true,false],['V','ванадий',4,5,'d',true,false],['Cr','хром',4,6,'d',true,false],['Mn','марганец',4,7,'d',true,false],['Fe','железо',4,8,'d',true,false],['Cu','медь',4,1,'d',true,false],['Zn','цинк',4,2,'d',true,false],
+['Ga','галлий',4,3,'p',true,false],['Ge','германий',4,4,'p',null,null],['As','мышьяк',4,5,'p',false,true],['Se','селен',4,6,'p',false,true],['Br','бром',4,7,'p',false,true],
+['Rb','рубидий',5,1,'s',true,false],['Sr','стронций',5,2,'s',true,false],['Ag','серебро',5,1,'d',true,false],['Sn','олово',5,4,'p',true,null],['Sb','сурьма',5,5,'p',null,null],['Te','теллур',5,6,'p',null,null],['I','иод',5,7,'p',false,true],
+['Cs','цезий',6,1,'s',true,false],['Ba','барий',6,2,'s',true,false],['Pb','свинец',6,4,'p',true,null]];
+const E={};RAW.forEach(r=>E[r[0]]={s:r[0],n:r[1],p:r[2],g:r[3],b:r[4],m:r[5],lvs:r[6]});
+const grpName=e=>e.b==='d'?ROM[e.g]+'B':ROM[e.g]+'A';
+
+/* ---------- РАССТАВЬ ПО ПОРЯДКУ ---------- */
+// dp: как меняется свойство в периоде слева направо (+1 растёт), dg: в группе сверху вниз
+const PROPS={
+ radius:{gen:'атомного радиуса',nom:'атомный радиус',pl:false,dp:-1,dg:+1,inc:['возрастания','увеличения'],dec:['уменьшения'],
+   per:{2:'Li Be B C N O F',3:'Na Mg Al Si P S Cl',4:'K Ca Ga Ge As Se Br'},grp:{1:'Li Na K Rb Cs',2:'Be Mg Ca Sr Ba',5:'N P As Sb',6:'O S Se Te',7:'F Cl Br I'}},
+ en:{gen:'электроотрицательности',nom:'электроотрицательность',pl:false,dp:+1,dg:-1,inc:['возрастания','увеличения'],dec:['уменьшения'],
+   per:{2:'Li Be B C N O F',3:'Na Mg Al Si P S Cl',4:'K Ca Ga Ge As Se Br'},grp:{1:'Li Na K Rb Cs',2:'Be Mg Ca Sr Ba',5:'N P As',6:'O S Se Te',7:'F Cl Br I'}},
+ met:{gen:'металлических свойств',nom:'металлические свойства',pl:true,dp:-1,dg:+1,inc:['усиления','возрастания'],dec:['ослабления','уменьшения'],
+   per:{2:'Li Be B C N O F',3:'Na Mg Al Si P S Cl',4:'K Ca Ga Ge As Se Br'},grp:{1:'Li Na K Rb Cs',2:'Be Mg Ca Sr Ba',5:'N P As Sb',6:'O S Se Te',7:'F Cl Br I'}},
+ nonmet:{gen:'неметаллических свойств',nom:'неметаллические свойства',pl:true,dp:+1,dg:-1,inc:['усиления','возрастания'],dec:['ослабления','уменьшения'],
+   per:{2:'Li Be B C N O F',3:'Na Mg Al Si P S Cl',4:'K Ca Ga Ge As Se Br'},grp:{5:'N P As Sb',6:'O S Se Te',7:'F Cl Br I'}},
+ red:{gen:'восстановительных свойств их простых веществ',nom:'восстановительные свойства',pl:true,dp:-1,dg:+1,inc:['усиления','возрастания'],dec:['ослабления','уменьшения'],
+   per:{2:'Li Be B C',3:'Na Mg Al Si P',4:'K Ca Ga'},grp:{1:'Li Na K Rb Cs',2:'Be Mg Ca Sr Ba'}},
+ ox:{gen:'окислительных свойств их простых веществ',nom:'окислительные свойства',pl:true,dp:+1,dg:-1,inc:['усиления','возрастания'],dec:['ослабления','уменьшения'],
+   per:{2:'C N O F',3:'Si P S Cl',4:'As Se Br'},grp:{6:'O S Se',7:'F Cl Br I'}},
+ acidOx:{gen:'кислотных свойств их высших оксидов',nom:'кислотные свойства высших оксидов',pl:true,dp:+1,dg:-1,inc:['усиления','возрастания'],dec:['ослабления','уменьшения'],
+   per:{3:'Na Mg Al Si P S Cl',2:'Li Be B C N'},grp:{5:'N P As',6:'S Se Te',7:'Cl Br I'}},
+ acidHyd:{gen:'кислотных свойств их высших гидроксидов',nom:'кислотные свойства высших гидроксидов',pl:true,dp:+1,dg:-1,inc:['усиления','возрастания'],dec:['ослабления','уменьшения'],
+   per:{3:'Na Mg Al Si P S Cl',2:'Li Be B C N'},grp:{5:'N P As',6:'S Se Te',7:'Cl Br I'}},
+ baseHyd:{gen:'основных свойств их высших гидроксидов',nom:'основные свойства гидроксидов',pl:true,dp:-1,dg:+1,inc:['усиления','возрастания'],dec:['ослабления','уменьшения'],
+   per:{3:'Na Mg Al',4:'K Ca Ga'},grp:{1:'Li Na K Rb Cs',2:'Be Mg Ca Sr Ba'}},
+ acidLVS:{gen:'кислотных свойств их летучих водородных соединений',nom:'кислотные свойства ЛВС',pl:true,dp:+1,dg:+1,inc:['усиления','возрастания'],dec:['ослабления','уменьшения'],
+   per:{2:'N O F',3:'Si P S Cl'},grp:{6:'O S Se Te',7:'F Cl Br I'}},
+ valLVS:{gen:'валентности в их летучих водородных соединениях',val:e=>8-e.g,show:e=>ROM[8-e.g],inc:['возрастания','увеличения'],dec:['уменьшения'],
+   set:'C Si Ge N P As O S Se F Cl Br I',rule:'Валентность в ЛВС = 8 − № группы'},
+ so:{gen:'степени окисления в их высших оксидах',val:e=>e.g,show:e=>'+'+e.g,inc:['возрастания','увеличения'],dec:['уменьшения'],
+   set:'Li Na K Be Mg Ca B Al C Si N P S Se Cl Br Sc Ti V Cr Mn',rule:'Высшая С.О. = № группы (у d-элементов тоже)'}
+};
+const ORDER_LVL={1:['radius','en'],2:['met','nonmet','red','ox'],3:['acidOx','acidHyd','baseHyd','acidLVS','valLVS','so']};
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+const words=s=>s.split(' ').map(x=>E[x]);
+
+function genOrder(pid){
+  const P=PROPS[pid];const up=Math.random()<.5;const verb=rnd(up?P.inc:P.dec);
+  let els,key,ctx,expl;
+  if(P.val){
+    for(let k=0;k<200;k++){els=shuffle(words(P.set)).slice(0,3);if(new Set(els.map(P.val)).size===3)break;}
+    key=P.val;
+    expl=P.rule+': '+els.map(e=>e.s+' — '+P.show(e)).join(', ')+'.';
+  } else {
+    const usePer=Math.random()<.5||!Object.keys(P.grp).length;
+    const pools=usePer?P.per:P.grp;const k=rnd(Object.keys(pools));
+    els=shuffle(words(pools[k])).slice(0,3);
+    if(usePer){key=e=>P.dp*e.g;ctx='Все три — '+k+'-й период: слева направо '+P.nom+' '+(P.dp>0?(P.pl?'усиливаются':'увеличивается'):(P.pl?'ослабевают':'уменьшается'))+'.';}
+    else {key=e=>P.dg*e.p;ctx='Все три — '+ROM[k]+'A группа: сверху вниз '+P.nom+' '+(P.dg>0?(P.pl?'усиливаются':'увеличивается'):(P.pl?'ослабевают':'уменьшается'))+'.';}
+    expl=ctx;
+    if(pid==='acidLVS'&&!usePer)expl+=' Это ловушка: ЭО падает, а кислотность ЛВС растёт (HF < HCl < HBr < HI).';
+  }
+  const ans=els.slice().sort((a,b)=>up?key(a)-key(b):key(b)-key(a));
+  let shown=shuffle(els);if(shown.map(e=>e.s).join()===ans.map(e=>e.s).join())shown=[shown[1],shown[2],shown[0]];
+  return {kind:'order',text:'Расположите элементы в порядке <b>'+verb+' '+P.gen+'</b>.',short:verb+' '+P.gen,els:shown,ans:ans.map(e=>e.s),expl};
+}
+
+/* ---------- ВЫБЕРИ ТРИ ---------- */
+const MAIN=RAW.map(r=>E[r[0]]).filter(e=>e.b!=='d');
+const ALL=RAW.map(r=>E[r[0]]);
+const CRIT={
+ period:()=>{const p=rnd([2,3,4]);return {text:'находятся в <b>одном периоде</b>',test:e=>e.p===p,pool:MAIN,note:e=>e.s+' — '+e.p+'-й период'};},
+ group:()=>{const g=rnd([1,2,5,6,7]);return {text:'находятся в <b>одной группе</b>',test:e=>e.g===g&&e.b!=='d',pool:MAIN.filter(e=>e.p>1),note:e=>e.s+' — '+grpName(e)};},
+ small:()=>({text:'находятся в <b>малых периодах</b>',test:e=>e.p<=3,pool:ALL,note:e=>e.s+' — '+e.p+'-й период'}),
+ sblock:()=>({text:'являются <b>s-элементами</b>',test:e=>e.b==='s',pool:ALL,note:e=>e.s+' — '+e.b}),
+ pblock:()=>({text:'являются <b>p-элементами</b>',test:e=>e.b==='p',pool:ALL,note:e=>e.s+' — '+e.b}),
+ dblock:()=>({text:'являются <b>d-элементами</b>',test:e=>e.b==='d',pool:ALL,note:e=>e.s+' — '+e.b}),
+ metal:()=>({text:'являются <b>металлами</b>',test:e=>e.m===true,pool:ALL.filter(e=>e.m!==null),note:e=>e.s+' — '+(e.m?'металл':'неметалл')}),
+ nonmetal:()=>({text:'являются <b>неметаллами</b>',test:e=>e.m===false,pool:ALL.filter(e=>e.m!==null),note:e=>e.s+' — '+(e.m?'металл':'неметалл')}),
+ lvs:()=>({text:'образуют <b>летучие водородные соединения</b>',test:e=>e.lvs===true,pool:ALL.filter(e=>e.lvs!==null),note:e=>e.s+(e.lvs?' — образует ЛВС':' — металл, ЛВС нет')})
+};
+const CHOOSE_LVL={1:['period','group','small'],2:['sblock','pblock','dblock'],3:['metal','nonmetal','lvs']};
+const TRAPS={metal:['Al','Ga','Cr','Mn','Zn','Cu','Be'],nonmetal:['H','B','Si','As','Se'],sblock:['H','Be'],pblock:['Al','Ga','Sn','Pb','B'],dblock:['Cr','Mn','Cu','Zn','Ag'],lvs:['Si','As','Se','Al','Be']};
+function genChoose(cid){
+  const C=CRIT[cid]();
+  for(let k=0;k<500;k++){
+    const yes=shuffle(C.pool.filter(C.test)),no=shuffle(C.pool.filter(e=>!C.test(e)));
+    let pick=yes.slice(0,3);
+    const trap=(TRAPS[cid]||[]).map(s=>E[s]).filter(e=>C.pool.includes(e));
+    if(trap.length&&Math.random()<.7){const t=rnd(trap);if(C.test(t)){if(!pick.includes(t))pick[2]=t;}else{no.unshift(t);}}
+    const others=[...new Set(no)].slice(0,2);
+    if(new Set(pick).size<3||others.length<2)continue;
+    if(cid==='group'&&others.some(e=>C.test(e)))continue;
+    const row=shuffle(pick.concat(others));
+    return {kind:'choose',text:'Из указанных в ряду элементов выберите три, которые '+C.text+'.',short:C.text.replace(/<\/?b>/g,''),els:row,ans:pick.map(e=>e.s),expl:row.map(C.note).join('; ')+'.'};
+  }
+}
+
+/* ---------- ОБЩЕЕ ---------- */
+const LVL={1:'простое',2:'среднее',3:'сложное'};
+const $=id=>document.getElementById(id);
+const tg=window.Telegram&&window.Telegram.WebApp;const inTG=!!(tg&&tg.initData);
+if(tg){try{tg.ready();tg.expand();if(inTG&&tg.BackButton){tg.BackButton.show();tg.BackButton.onClick(()=>{location.href='index.html';});}}catch(e){}}
+if(inTG){try{const u=tg.initDataUnsafe&&tg.initDataUnsafe.user;if(u)$('name').value=[u.first_name,u.last_name].filter(Boolean).join(' ');}catch(e){}}
+$('hintline').textContent=MODE==='order'?'Нажимай на элементы по порядку, повторное нажатие убирает элемент · Enter — проверить / дальше':'Нажми на три элемента · Enter — проверить / дальше';
+
+let tasks=[],cur=0,answered=false,log=[],t0=0,student='',sel=[];
+function build(){
+  const out=[];const L=MODE==='order'?ORDER_LVL:CHOOSE_LVL;const gen=MODE==='order'?genOrder:genChoose;
+  [1,2,3].forEach(l=>{const ids=L[l];const seen=new Set();let i=0,guard=0;
+    while(i<10&&guard<300){guard++;const t=gen(ids[i%ids.length]);const sig=t.short+t.els.map(e=>e.s).sort().join();if(seen.has(sig))continue;seen.add(sig);t.l=l;out.push(t);i++;}
+    const part=out.splice(out.length-10,10);out.push(...shuffle(part));});
+  return out;
+}
+function start(){
+  const name=$('name').value.trim();
+  if(name.length<2){$('nameErr').textContent='Впиши имя, чтобы оно было на скриншоте';return;}
+  student=name;$('nameErr').textContent='';tasks=build();cur=0;log=[];t0=Date.now();
+  $('start').classList.add('hidden');$('result').classList.add('hidden');$('quiz').classList.remove('hidden');show();
+}
+function show(){
+  const t=tasks[cur];answered=false;sel=[];
+  $('num').textContent='Задание '+(cur+1)+' из '+tasks.length;$('lvl').textContent=LVL[t.l];
+  $('bar').style.width=(cur/tasks.length*100)+'%';
+  $('task').innerHTML=t.text;$('qErr').textContent='';
+  $('chips').innerHTML=t.els.map((e,i)=>'<button class="ech" type="button" data-s="'+e.s+'"><span>'+(MODE==='choose'?(i+1)+') ':'')+e.s+'</span><small>'+e.n+'</small></button>').join('');
+  document.querySelectorAll('#chips .ech').forEach(b=>b.onclick=()=>toggle(b.dataset.s));
+  renderSel();
+  $('fb').className='fb';$('check').classList.remove('hidden');$('next').classList.add('hidden');
+}
+function toggle(s){if(answered)return;const i=sel.indexOf(s);if(i>=0)sel.splice(i,1);else if(sel.length<3)sel.push(s);$('qErr').textContent='';renderSel();}
+function renderSel(){
+  document.querySelectorAll('#chips .ech').forEach(b=>{const i=sel.indexOf(b.dataset.s);b.classList.toggle('sel',i>=0);const old=b.querySelector('.badge');if(old)old.remove();
+    if(i>=0&&MODE==='order'){const d=document.createElement('span');d.className='badge';d.textContent=i+1;b.appendChild(d);}});
+  if(MODE==='order'){$('slots').innerHTML='<div class="slots">'+[0,1,2].map(i=>'<div class="slot'+(sel[i]?' f':'')+'">'+(sel[i]||'')+'</div>'+(i<2?'<span class="arrow">→</span>':'')).join('')+'</div>';}
+  else $('slots').innerHTML='';
+}
+function check(){
+  if(answered)return;const t=tasks[cur];
+  if(sel.length<3){$('qErr').textContent=MODE==='order'?'Расставь все три элемента':'Выбери три элемента';return;}
+  let ok;
+  if(MODE==='order'){ok=sel.join()===t.ans.join();
+    document.querySelectorAll('.slot').forEach((d,i)=>d.classList.add(sel[i]===t.ans[i]?'right':'wrong'));document.querySelectorAll('#chips .ech').forEach(b=>b.classList.remove('sel'));}
+  else {ok=sel.slice().sort().join()===t.ans.slice().sort().join();
+    document.querySelectorAll('#chips .ech').forEach(b=>{const s=b.dataset.s,inA=t.ans.includes(s),inS=sel.includes(s);b.classList.remove('sel');
+      if(inS)b.classList.add(inA?'right':'wrong');else if(inA)b.classList.add('missed');});}
+  document.querySelectorAll('#chips .ech').forEach(b=>b.disabled=true);
+  answered=true;
+  const fmt=a=>MODE==='order'?a.join(' → '):a.map(s=>(t.els.findIndex(e=>e.s===s)+1)+') '+s).join(', ');
+  const ansStr=MODE==='order'?fmt(t.ans):fmt(t.els.filter(e=>t.ans.includes(e.s)).map(e=>e.s));
+  const userStr=MODE==='order'?fmt(sel):fmt(t.els.filter(e=>sel.includes(e.s)).map(e=>e.s));
+  log.push({t,ok,user:userStr,correct:ansStr});
+  $('fb').className='fb '+(ok?'ok':'bad');
+  $('fb').innerHTML='<b class="h">'+(ok?'Верно!':'Неверно. Правильно: '+ansStr)+'</b>'+t.expl;
+  $('check').classList.add('hidden');$('next').classList.remove('hidden');
+  $('next').textContent=cur===tasks.length-1?'Посмотреть результат':'Дальше';$('next').focus();
+}
+function next(){if(!answered)return;cur++;cur<tasks.length?show():finish();}
+function finish(){
+  const right=log.filter(x=>x.ok).length,n=log.length,sec=Math.round((Date.now()-t0)/1000);
+  const d=new Date(),pad=x=>String(x).padStart(2,'0');
+  $('quiz').classList.add('hidden');$('result').classList.remove('hidden');
+  $('rName').textContent=student;
+  $('rMeta').textContent=pad(d.getDate())+'.'+pad(d.getMonth()+1)+'.'+d.getFullYear()+', '+pad(d.getHours())+':'+pad(d.getMinutes())+' · время: '+Math.floor(sec/60)+' мин '+pad(sec%60)+' с';
+  $('rScore').innerHTML=right+'<small>/'+n+'</small>';
+  const p=Math.round(right/n*100);
+  $('rVerdict').textContent=p===100?'Идеально!':p>=90?'Отлично!':p>=75?'Хорошо':p>=50?'Нужно потренироваться':'Повтори правила и попробуй снова';
+  $('rPct').textContent=p+'% правильных ответов';
+  $('rGrid').innerHTML=log.map((x,i)=>'<div class="'+(x.ok?'g':'r')+'">'+(i+1)+'</div>').join('');
+  const bad=log.map((x,i)=>({...x,i})).filter(x=>!x.ok);
+  $('rMist').innerHTML=bad.length===0?'<div class="perfect">Ни одной ошибки</div>':
+    '<h3>Ошибки</h3><table><tr><th>№</th><th>Задание</th><th>Ответ</th><th>Верно</th></tr>'+
+    bad.map(x=>'<tr><td>'+(x.i+1)+'</td><td>'+x.t.els.map(e=>e.s).join(', ')+': '+x.t.short+'</td><td class="no">'+x.user+'</td><td class="yes">'+x.correct+'</td></tr>').join('')+'</table>';
+  window.scrollTo(0,0);
+}
+$('go').onclick=start;$('name').addEventListener('keydown',e=>{if(e.key==='Enter')start();});
+$('check').onclick=check;$('next').onclick=next;
+$('again').onclick=()=>{$('result').classList.add('hidden');$('start').classList.remove('hidden');};
+document.addEventListener('keydown',e=>{if($('quiz').classList.contains('hidden')||e.key!=='Enter')return;e.preventDefault();answered?next():check();});
+</script>
+</body>
+</html>
