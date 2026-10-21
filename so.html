@@ -91,6 +91,14 @@ input[type=text]:focus{border-color:var(--pu)}
   .score .big{font-size:52px}
   .grid{gap:4px}
 }
+
+.levels{display:grid;gap:10px;margin-top:16px}
+.lv-btn{display:flex;align-items:center;gap:14px;text-align:left;font:inherit;background:#fff;border:1.5px solid var(--ln);border-radius:14px;padding:14px 16px;cursor:pointer;color:var(--ink);transition:border-color .12s,transform .12s}
+.lv-btn:hover{border-color:var(--pu);transform:translateY(-1px)}
+.lv-btn .dot{flex:none;width:40px;height:40px;border-radius:12px;background:var(--lv);color:var(--pu);display:grid;place-items:center;font-weight:700;font-size:16px}
+.lv-btn b{display:block;font-size:17px}
+.lv-btn small{display:block;color:var(--grey);font-size:13px;line-height:1.4;margin-top:2px}
+.lv-note{color:var(--grey);font-size:13px;margin:14px 0 0}
 </style>
 </head>
 <body>
@@ -101,17 +109,9 @@ input[type=text]:focus{border-color:var(--pu)}
 
   <!-- START -->
   <section id="start" class="card">
-    <span class="pill">Как это работает</span>
-    <ol class="rules">
-      <li><b>30 заданий</b>: 10 простых, 10 средних, 10 сложных</li>
-      <li>В формуле <b>выделен элемент</b> — выбери его степень окисления</li>
-      <li>После каждого ответа — <b>разбор</b>, исправить ответ нельзя</li>
-      <li>В конце сделай <b>скриншот результата</b> и отправь преподавателю</li>
-    </ol>
-    <label for="name">Имя и фамилия</label>
-    <input type="text" id="name" placeholder="Например, Иван Петров" autocomplete="off">
-    <div class="err" id="nameErr"></div>
-    <div class="row"><button class="btn" id="go">Начать</button></div>
+    <span class="pill">Выбери уровень</span>
+    <div class="levels" id="levels"></div>
+    <p class="lv-note">В каждом уровне 12 заданий, после каждого ответа — разбор.</p>
   </section>
 
   <!-- QUIZ -->
@@ -142,8 +142,8 @@ input[type=text]:focus{border-color:var(--pu)}
     </div>
     <div class="grid" id="rGrid"></div>
     <div class="mist" id="rMist"></div>
-    <div class="foot" id="sendNote">Сделай скриншот этого экрана и отправь преподавателю</div>
-    <div class="row"><button class="btn hidden" id="send">Отправить результат преподавателю</button><button class="btn ghost" id="again">Пройти ещё раз</button></div>
+    <div class="foot hidden" id="sendNote"></div>
+    <div class="row"><button class="btn hidden" id="send">Отправить результат преподавателю</button><button class="btn" id="againLvl">Ещё раз</button><button class="btn ghost" id="toLevels">Другой уровень</button></div>
     <div class="err" id="sendErr"></div>
   </section>
 </div>
@@ -249,7 +249,7 @@ const BANK = {
  ['(NH4)2[Cr]2O7',6,'NH₄⁺ = +1: 2·(+1) + 2x + 7·(−2) = 0 → x = +6'],
  ['[Cl]O2',4,'x + 2·(−2) = 0 → x = +4']
 ]};
-const LVL = {1:'простое',2:'среднее',3:'сложное'};
+const LVL = {1:'лёгкий',2:'средний',3:'сложный'};
 const OPTIONS = [-4,-3,-2,-1,0,1,2,3,4,5,6,7];
 const fmt = n => n>0 ? '+'+n : n<0 ? '−'+Math.abs(n) : '0';
 
@@ -327,7 +327,7 @@ function finish(){
   const right=log.filter(x=>x.ok).length,n=log.length,sec=Math.round((Date.now()-t0)/1000);
   const d=new Date();const pad=x=>String(x).padStart(2,'0');
   const date=pad(d.getDate())+'.'+pad(d.getMonth()+1)+'.'+d.getFullYear()+', '+pad(d.getHours())+':'+pad(d.getMinutes());
-  const att=inTG?0:attemptNo(student);
+  const att=0;
   $('quiz').classList.add('hidden');$('result').classList.remove('hidden');
   $('rName').textContent=student;
   $('rMeta').textContent=date+' · время: '+Math.floor(sec/60)+' мин '+pad(sec%60)+' с'+(att?' · попытка №'+att:'');
@@ -351,15 +351,29 @@ function sendResult(){
   catch(e){$('sendErr').textContent='Не получилось отправить. Открой тренажёр кнопкой внизу чата с ботом, а не по ссылке, и пройди ещё раз.';}
 }
 
-$('go').onclick=start;
+
 $('send').onclick=sendResult;
-$('name').addEventListener('keydown',e=>{if(e.key==='Enter')start();});
+
 $('check').onclick=check;$('next').onclick=next;
-$('again').onclick=()=>{$('result').classList.add('hidden');$('start').classList.remove('hidden');$('name').value=student;};
+
 document.addEventListener('keydown',e=>{
   if($('quiz').classList.contains('hidden')||e.key!=='Enter')return;
   e.preventDefault();answered?next():check();
 });
+
+/* ---- выбор уровня ---- */
+const COUNT=12;
+const LEVEL_INFO={"1": ["Лёгкий", "Бинарные вещества: оксиды, ЛВС, хлориды"], "2": ["Средний", "Кислоты, соли, гидроксиды"], "3": ["Сложный", "Ионы, пероксиды, гидриды, OF₂, органика"]};
+let curLevel=1;
+function start(level){
+  curLevel=level;student='Уровень: '+LEVEL_INFO[level][0].toLowerCase();
+  tasks=shuffle(BANK[level]).slice(0,COUNT).map(t=>({f:t[0],a:t[1],e:t[2],l:level}));cur=0;log=[];t0=Date.now();
+  $('start').classList.add('hidden');$('result').classList.add('hidden');$('quiz').classList.remove('hidden');window.scrollTo(0,0);show();
+}
+$('levels').innerHTML=Object.entries(LEVEL_INFO).map(([k,v],i)=>'<button class="lv-btn" type="button" data-l="'+k+'"><span class="dot">'+(i+1)+'</span><span><b>'+v[0]+'</b><small>'+v[1]+'</small></span></button>').join('');
+document.querySelectorAll('.lv-btn').forEach(b=>b.onclick=()=>start(+b.dataset.l));
+$('againLvl').onclick=()=>start(curLevel);
+$('toLevels').onclick=()=>{$('result').classList.add('hidden');$('quiz').classList.add('hidden');$('start').classList.remove('hidden');window.scrollTo(0,0);};
 </script>
 </body>
 </html>

@@ -88,6 +88,14 @@ input.name:focus{border-color:var(--pu)}
   .score .big{font-size:52px}
   .grid{gap:4px}
 }
+
+.levels{display:grid;gap:10px;margin-top:16px}
+.lv-btn{display:flex;align-items:center;gap:14px;text-align:left;font:inherit;background:#fff;border:1.5px solid var(--ln);border-radius:14px;padding:14px 16px;cursor:pointer;color:var(--ink);transition:border-color .12s,transform .12s}
+.lv-btn:hover{border-color:var(--pu);transform:translateY(-1px)}
+.lv-btn .dot{flex:none;width:40px;height:40px;border-radius:12px;background:var(--lv);color:var(--pu);display:grid;place-items:center;font-weight:700;font-size:16px}
+.lv-btn b{display:block;font-size:17px}
+.lv-btn small{display:block;color:var(--grey);font-size:13px;line-height:1.4;margin-top:2px}
+.lv-note{color:var(--grey);font-size:13px;margin:14px 0 0}
 </style>
 </head>
 <body>
@@ -97,12 +105,9 @@ input.name:focus{border-color:var(--pu)}
   <div class="line"></div>
 
   <section id="start" class="card">
-    <span class="pill">Как это работает</span>
-    <ol class="rules"><li><b>30 заданий</b>: сначала 18 атомов (элементы 1–3 периодов), потом 12 ионов</li><li>Дан атом или ион — впиши, <b>сколько электронов на каждом слое</b></li><li>Лишние слои оставь пустыми</li><li>После ответа — разбор, в конце сделай <b>скриншот результата</b></li></ol>
-    <label for="name">Имя и фамилия</label>
-    <input class="name" type="text" id="name" placeholder="Например, Иван Петров" autocomplete="off">
-    <div class="err" id="nameErr"></div>
-    <div class="row"><button class="btn" id="go">Начать</button></div>
+    <span class="pill">Выбери уровень</span>
+    <div class="levels" id="levels"></div>
+    <p class="lv-note">В каждом уровне 12 заданий, после каждого ответа — разбор.</p>
   </section>
 
   <section id="quiz" class="card hidden">
@@ -125,8 +130,8 @@ input.name:focus{border-color:var(--pu)}
     <div class="score"><div class="big" id="rScore"></div><div><div class="verdict" id="rVerdict"></div><div class="pct" id="rPct"></div></div></div>
     <div class="grid" id="rGrid"></div>
     <div class="mist" id="rMist"></div>
-    <div class="foot">Сделай скриншот этого экрана и отправь преподавателю</div>
-    <div class="row"><button class="btn ghost" id="again">Пройти ещё раз</button></div>
+    
+    <div class="row"><button class="btn" id="againLvl">Ещё раз</button><button class="btn ghost" id="toLevels">Другой уровень</button></div>
   </section>
 </div>
 
@@ -173,7 +178,7 @@ const POOLS={
   3:range(21,30).map(at).concat([io(26,2),io(26,3),io(29,2),io(29,1),io(30,2),io(25,2),io(24,3),io(35,-1),io(34,-2)])}
 };
 const MUST={layers:[],config:[24,29]};
-const LVL=MODE==='layers'?{1:'простое',2:'сложное'}:{1:'простое',2:'среднее',3:'сложное'};
+const LVL=MODE==='layers'?{1:'лёгкий',2:'сложный'}:{1:'лёгкий',2:'средний',3:'сложный'};
 const LEVELS=MODE==='layers'?[1,2]:[1,2,3];
 
 function explain(t){
@@ -198,7 +203,7 @@ function pick(level){
   let pool=shuffle(POOLS[MODE][level]);
   if(level===3){const must=pool.filter(t=>!t.q&&MUST[MODE].includes(t.z));pool=must.concat(pool.filter(t=>!must.includes(t)));
     if(MODE==='config'){const ions=pool.filter(t=>t.q),atoms=pool.filter(t=>!t.q);pool=atoms.filter(t=>MUST.config.includes(t.z)).concat(ions.slice(0,3),atoms.filter(t=>!MUST.config.includes(t.z)),ions.slice(3));}}
-  return shuffle(MODE==='layers'?pool:pool.slice(0,10));
+  return shuffle(pool.slice(0,COUNT));
 }
 
 const $=id=>document.getElementById(id);
@@ -290,10 +295,24 @@ function finish(){
   window.scrollTo(0,0);
 }
 
-$('go').onclick=start;$('name').addEventListener('keydown',e=>{if(e.key==='Enter')start();});
+
 $('check').onclick=check;$('next').onclick=next;
-$('again').onclick=()=>{$('result').classList.add('hidden');$('start').classList.remove('hidden');};
+
 document.addEventListener('keydown',e=>{if($('quiz').classList.contains('hidden')||e.key!=='Enter')return;e.preventDefault();answered?next():check();});
+
+/* ---- выбор уровня ---- */
+const COUNT=12;
+const LEVEL_INFO={"1": ["Лёгкий", "Атомы элементов 1–3 периодов"], "2": ["Сложный", "Ионы элементов 1–3 периодов"]};
+let curLevel=1;
+function start(level){
+  curLevel=level;student='Уровень: '+LEVEL_INFO[level][0].toLowerCase();
+  tasks=pick(level).map(t=>({...t,l:level}));cur=0;log=[];t0=Date.now();
+  $('start').classList.add('hidden');$('result').classList.add('hidden');$('quiz').classList.remove('hidden');window.scrollTo(0,0);show();
+}
+$('levels').innerHTML=Object.entries(LEVEL_INFO).map(([k,v],i)=>'<button class="lv-btn" type="button" data-l="'+k+'"><span class="dot">'+(i+1)+'</span><span><b>'+v[0]+'</b><small>'+v[1]+'</small></span></button>').join('');
+document.querySelectorAll('.lv-btn').forEach(b=>b.onclick=()=>start(+b.dataset.l));
+$('againLvl').onclick=()=>start(curLevel);
+$('toLevels').onclick=()=>{$('result').classList.add('hidden');$('quiz').classList.add('hidden');$('start').classList.remove('hidden');window.scrollTo(0,0);};
 </script>
 </body>
 </html>
