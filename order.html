@@ -398,5 +398,36 @@ $('toLevels').onclick=()=>{$('result').classList.add('hidden');$('quiz').classLi
   }
 })();
 </script>
+<script>
+/* ---- лучший результат ученика на кнопках уровней ---- */
+(function(){
+  const tg=window.Telegram&&window.Telegram.WebApp;
+  let API=null;try{API=new URLSearchParams(location.search).get('api')||sessionStorage.getItem('api');}catch(e){}
+  if(!API||!tg||!tg.initData)return;
+  const file=location.pathname.split('/').pop();
+  const css=document.createElement('style');
+  css.textContent='.lv-best{margin-left:auto;flex:none;font-size:13px;font-weight:700;border-radius:8px;padding:5px 9px;white-space:nowrap;font-variant-numeric:tabular-nums}.lv-best.c3{background:#e3f6ee;color:#1f9d6b}.lv-best.c2{background:#fff2dc;color:#c27a00}.lv-best.c1{background:#fde8eb;color:#e0475b}';
+  document.head.appendChild(css);
+  function paint(rows){
+    const best={};
+    rows.filter(r=>r.file===file).forEach(r=>{const b=best[r.level];if(!b||r.score/r.total>b.score/b.total)best[r.level]=r;});
+    document.querySelectorAll('.lv-btn[data-l]').forEach(btn=>{
+      let s=btn.querySelector('.lv-best');const b=best[btn.dataset.l];
+      if(!b){if(s)s.remove();return;}
+      if(!s){s=document.createElement('span');btn.appendChild(s);}
+      const p=b.score*100/b.total;
+      s.className='lv-best '+(p>=85?'c3':p>=60?'c2':'c1');
+      s.textContent=(p>=70?'✓ ':'')+b.score+'/'+b.total;
+      s.title='Твой лучший результат';
+    });
+  }
+  function load(){
+    fetch(API.replace(/\/$/,'')+'/api/me',{method:'POST',headers:{'content-type':'text/plain'},body:JSON.stringify({initData:tg.initData})})
+      .then(r=>r.json()).then(d=>{if(d.ok)paint(d.rows||[]);}).catch(()=>{});
+  }
+  load();
+  const tl=document.getElementById('toLevels');if(tl)tl.addEventListener('click',load);
+})();
+</script>
 </body>
 </html>

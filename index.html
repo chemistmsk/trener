@@ -31,6 +31,9 @@ a.item:focus-visible{outline:3px solid var(--pu);outline-offset:2px}
 .item.soon{opacity:.6;box-shadow:0 2px 0 var(--ln)}
 .item.soon .go{background:var(--lv);color:var(--pu)}
 .foot{font-size:12px;color:var(--grey);margin-top:28px}
+.prog{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:7px;font-size:12px;color:var(--grey)}
+.prog i{font-style:normal;font-weight:700;border-radius:6px;padding:2px 6px;font-variant-numeric:tabular-nums;background:#f1f1f4;color:#aaa}
+.prog i.c3{background:#e3f6ee;color:#1f9d6b}.prog i.c2{background:#fff2dc;color:#c27a00}.prog i.c1{background:#fde8eb;color:#e0475b}
 @media (max-width:480px){.go{display:none}.item{padding:14px}}
 @media (prefers-reduced-motion:reduce){.item{transition:none}}
 </style>
@@ -39,7 +42,7 @@ a.item:focus-visible{outline:3px solid var(--pu);outline-offset:2px}
 <div class="wrap">
   <div class="head"><h1>Тренажёры</h1><span>химия · ЕГЭ и ОГЭ</span></div>
   <div class="line"></div>
-  <p class="hello" id="hello">Выбери тренажёр. В конце сделай скриншот результата и отправь преподавателю.</p>
+  <p class="hello" id="hello">Выбери тренажёр и отрабатывай теорию для ЕГЭ и ОГЭ в удобном формате.</p>
   <div id="menu"></div>
   <div class="foot">Если тренажёр не открывается — закрой и снова открой бота.</div>
 </div>
@@ -52,14 +55,31 @@ if (tg) { try { tg.ready(); tg.expand(); if (tg.BackButton) tg.BackButton.hide()
 try {
   const u = tg && tg.initData && tg.initDataUnsafe && tg.initDataUnsafe.user;
   if (u && u.first_name) document.getElementById('hello').textContent =
-    'Привет, ' + u.first_name + '! Выбери тренажёр. В конце сделай скриншот результата и отправь преподавателю.';
+    'Привет, ' + u.first_name + '! Выбери тренажёр и отрабатывай теорию для ЕГЭ и ОГЭ в удобном формате.';
 } catch (e) {}
 
+const API = (() => { let a = null; try { a = new URLSearchParams(location.search).get('api'); if (a) sessionStorage.setItem('api', a); else a = sessionStorage.getItem('api'); } catch (e) {} return a; })();
+let MENU = null, ROWS = null;
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+// лучший результат по каждому уровню (если открыто из бота)
+function prog(it) {
+  if (!ROWS) return '';
+  const n = it.levels || 3, best = {};
+  ROWS.filter(r => r.file === it.file).forEach(r => { const b = best[r.level]; if (!b || r.score / r.total > b.score / b.total) best[r.level] = r; });
+  if (!Object.keys(best).length) return '<div class="prog">ещё не проходил(а)</div>';
+  let done = 0, cells = '';
+  for (let l = 1; l <= n; l++) {
+    const b = best[l];
+    if (!b) { cells += '<i title="' + esc((it.levelNames && it.levelNames[l - 1]) || 'уровень ' + l) + '">—</i>'; continue; }
+    const p = b.score * 100 / b.total; if (p >= 70) done++;
+    cells += '<i class="' + (p >= 85 ? 'c3' : p >= 60 ? 'c2' : 'c1') + '" title="' + esc((it.levelNames && it.levelNames[l - 1]) || 'уровень ' + l) + '">' + b.score + '/' + b.total + '</i>';
+  }
+  return '<div class="prog">пройдено ' + done + ' из ' + n + ': ' + cells + '</div>';
+}
 function card(it) {
   return !it.file
     ? '<div class="item soon"><div class="icon">' + esc(it.icon || '…') + '</div><div class="txt"><b>' + esc(it.title) + '</b><small>' + esc(it.about || 'Скоро') + '</small></div><span class="go">скоро</span></div>'
-    : '<a class="item" href="' + esc(it.file) + '"><div class="icon">' + esc(it.icon || '→') + '</div><div class="txt"><b>' + esc(it.title) + '</b><small>' + esc(it.about || '') + '</small></div><span class="go">Начать</span></a>';
+    : '<a class="item" href="' + esc(it.file) + (API ? '?api=' + encodeURIComponent(API) : '') + '"><div class="icon">' + esc(it.icon || '→') + '</div><div class="txt"><b>' + esc(it.title) + '</b><small>' + esc(it.about || '') + '</small>' + prog(it) + '</div><span class="go">Начать</span></a>';
 }
 function render(menu) {
   let html = '';
@@ -69,7 +89,11 @@ function render(menu) {
   }));
   document.getElementById('menu').innerHTML = html;
 }
-fetch('menu.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject()).then(m => render(m && m.exams ? m : FALLBACK)).catch(() => render(FALLBACK));
+fetch('menu.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject()).then(m => { MENU = m && m.exams ? m : FALLBACK; render(MENU); }).catch(() => { MENU = FALLBACK; render(MENU); });
+if (API && tg && tg.initData) {
+  fetch(API.replace(/\/$/, '') + '/api/me', { method: 'POST', headers: { 'content-type': 'text/plain' }, body: JSON.stringify({ initData: tg.initData }) })
+    .then(r => r.json()).then(d => { if (d.ok) { ROWS = d.rows || []; if (MENU) render(MENU); } }).catch(() => {});
+}
 </script>
 </body>
 </html>
