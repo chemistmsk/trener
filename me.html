@@ -139,6 +139,7 @@ const tg=window.Telegram&&window.Telegram.WebApp;
 if(tg){try{tg.ready();tg.expand();}catch(e){}}
 const API=(()=>{let a=new URLSearchParams(location.search).get('api');try{if(a)sessionStorage.setItem('api',a);else a=sessionStorage.getItem('api');}catch(e){}return a;})();
 const LV={1:'лёгкий',2:'средний',3:'сложный'};
+const lvName=(tr,l)=>(tr&&tr.levelNames&&tr.levelNames[l-1])||LV[l]||('уровень '+l);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const cls=p=>p==null?'c0':p>=85?'c3':p>=60?'c2':'c1';
 const fmtD=ts=>{const d=new Date(ts*1000),p=x=>String(x).padStart(2,'0');return p(d.getDate())+'.'+p(d.getMonth()+1)+' '+p(d.getHours())+':'+p(d.getMinutes());};
@@ -159,20 +160,20 @@ function render(d){
     trs.forEach(tr=>{
       const n=tr.levels||3;let cells='';
       for(let l=1;l<=n;l++){const p=best[tr.file+'|'+l];total++;if(p>=d.pass)done++;
-        if(p!=null&&p<d.pass&&(!weak||p<weak.p))weak={p,title:tr.title,l};
-        if(p==null&&!next)next={title:tr.title,l};
-        cells+='<span class="pc '+cls(p)+'" title="'+LV[l]+'">'+(p==null?'—':p+'%')+'</span>';}
+        if(p!=null&&p<d.pass&&(!weak||p<weak.p))weak={p,title:tr.title,l,ln:lvName(tr,l)};
+        if(p==null&&!next)next={title:tr.title,l,ln:lvName(tr,l)};
+        cells+='<span class="pc '+cls(p)+'" title="'+lvName(tr,l)+'">'+(p==null?'—':p+'%')+'</span>';}
       const h=(hist[tr.file]||[]).slice(0,10);
       html+='<div class="tr"><button class="trh" type="button"><b>'+esc(tr.title)+'</b><span class="lv">'+cells+'</span></button><div class="hist">'+
-        (h.length?h.map(r=>'<div class="row1"><span>'+fmtD(r.ts)+' · '+LV[r.level]+'</span><span>'+r.score+'/'+r.total+'</span></div>').join(''):'<div class="row1"><span>Ещё не проходил(а)</span></div>')+
+        (h.length?h.map(r=>'<div class="row1"><span>'+fmtD(r.ts)+' · '+lvName(tr,r.level)+'</span><span>'+r.score+'/'+r.total+'</span></div>').join(''):'<div class="row1"><span>Ещё не проходил(а)</span></div>')+
         '<a class="go" href="'+esc(tr.file)+'?api='+encodeURIComponent(API)+'">Открыть тренажёр →</a></div></div>';
     });
   }));
   const pct=total?Math.round(done/total*100):0;
-  const tip=weak?'Совет: повтори «'+weak.title+'» — '+LV[weak.l]+' уровень':next?'Совет: попробуй «'+next.title+'» — '+LV[next.l]+' уровень':'Все уровни пройдены — отличная работа!';
+  const tip=weak?'Совет: повтори «'+weak.title+'» — '+weak.ln:next?'Совет: попробуй «'+next.title+'» — '+next.ln:'Все уровни пройдены — отличная работа!';
   $('box').innerHTML='<div style="font-weight:700">Пройдено '+done+' из '+total+' уровней</div><div class="ov"><i id="ovb"></i></div>'+
     '<div class="meta">'+(d.streak?'🔥 '+d.streak+' '+(d.streak===1?'день':d.streak<5?'дня':'дней')+' подряд · ':'')+'всего попыток: '+d.rows.length+'</div>'+
-    html+'<div class="legend">Клетки — лёгкий / средний / сложный уровень, лучший результат. Уровень пройден от '+d.pass+'%. Нажми на тренажёр — откроется история.</div>'+
+    html+'<div class="legend">Клетки — уровни тренажёра по порядку (лёгкий, средний, сложный), лучший результат; подсказка при наведении. Уровень пройден от '+d.pass+'%. Нажми на тренажёр — откроется история.</div>'+
     '<div class="tip">'+esc(tip)+'</div>';
   setTimeout(()=>{$('ovb').style.width=pct+'%';},50);
   document.querySelectorAll('.trh').forEach(b=>b.onclick=()=>b.parentElement.classList.toggle('open'));

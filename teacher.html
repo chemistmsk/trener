@@ -158,6 +158,7 @@ const tg=window.Telegram&&window.Telegram.WebApp;
 if(tg){try{tg.ready();tg.expand();}catch(e){}}
 const API=(()=>{let a=new URLSearchParams(location.search).get('api');try{if(a)sessionStorage.setItem('api',a);else a=sessionStorage.getItem('api');}catch(e){}return a;})();
 const LV={1:'лёгкий',2:'средний',3:'сложный'};
+const lvName=(tr,l)=>(tr&&tr.levelNames&&tr.levelNames[l-1])||LV[l]||('уровень '+l);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const cls=p=>p==null?'c0':p>=85?'c3':p>=60?'c2':'c1';
 const name=u=>[u.first_name,u.last_name].filter(Boolean).join(' ')||(u.username?'@'+u.username:'id'+u.id);
@@ -194,18 +195,19 @@ function openStudent(id){
   const box=$('detail');box.classList.add('on');box.innerHTML='<div class="empty">Загружаю…</div>';box.scrollIntoView({behavior:'smooth'});
   call('/api/student',{id}).then(d=>{
     if(!d.ok)return fail('detail',d.error||'Ошибка');
+    const TR={};d.menu.exams.forEach(ex=>(ex.tasks||[]).forEach(t=>(t.trainers||[]).forEach(x=>{if(x.file)TR[x.file]=x;})));
     const best={},last={};d.rows.slice().reverse().forEach(r=>{const k=r.file+'|'+r.level,p=Math.round(r.score*100/r.total);best[k]=Math.max(best[k]??-1,p);last[k]=p;});
     let html='';
     d.menu.exams.forEach(ex=>(ex.tasks||[]).forEach(t=>{const trs=(t.trainers||[]).filter(x=>x.file);if(!trs.length)return;
       html+='<div class="ex">'+esc(ex.title)+' · '+esc(t.title)+'</div>';
-      trs.forEach(tr=>{let c='';for(let l=1;l<=(tr.levels||3);l++){const p=best[tr.file+'|'+l];c+='<span class="pc '+cls(p)+'" title="'+LV[l]+(p!=null?', последний '+last[tr.file+'|'+l]+'%':'')+'">'+(p==null?'—':p+'%')+'</span> ';}
+      trs.forEach(tr=>{let c='';for(let l=1;l<=(tr.levels||3);l++){const p=best[tr.file+'|'+l];c+='<span class="pc '+cls(p)+'" title="'+lvName(tr,l)+(p!=null?', последний '+last[tr.file+'|'+l]+'%':'')+'">'+(p==null?'—':p+'%')+'</span> ';}
         html+='<div class="trr"><span>'+esc(tr.title)+'</span><span>'+c+'</span></div>';});}));
     const mist={};d.rows.forEach(r=>JSON.parse(r.mistakes||'[]').forEach(m=>{const k=r.title+': '+m;mist[k]=(mist[k]||0)+1;}));
     const top=Object.entries(mist).sort((a,b)=>b[1]-a[1]).slice(0,8);
     box.innerHTML='<div class="dh"><h2 style="margin:0;font-size:18px">'+esc(name(d.user))+(d.user.username?' <small style="color:#737373">@'+esc(d.user.username)+'</small>':'')+'</h2><button class="close" id="cls">Закрыть</button></div>'+
       '<div class="note">Попыток: '+d.rows.length+'. Клетки — лучший результат по уровням (лёгкий / средний / сложный).</div>'+html+
       '<div class="two"><div class="box"><h3>Частые ошибки</h3>'+(top.length?top.map(([k,n])=>'<div class="er"><span>'+esc(k)+'</span><i>×'+n+'</i></div>').join(''):'<div class="note">Ошибок нет.</div>')+'</div>'+
-      '<div class="box"><h3>Последние попытки</h3>'+(d.rows.length?d.rows.slice(0,15).map(r=>'<div class="hrow"><span>'+fmtD(r.ts)+'</span><span>'+esc(r.title)+' · '+LV[r.level]+'</span><b>'+r.score+'/'+r.total+'</b></div>').join(''):'<div class="note">Пока нет.</div>')+'</div></div>';
+      '<div class="box"><h3>Последние попытки</h3>'+(d.rows.length?d.rows.slice(0,15).map(r=>'<div class="hrow"><span>'+fmtD(r.ts)+'</span><span>'+esc(r.title)+' · '+lvName(TR[r.file],r.level)+'</span><b>'+r.score+'/'+r.total+'</b></div>').join(''):'<div class="note">Пока нет.</div>')+'</div></div>';
     $('cls').onclick=()=>{box.classList.remove('on');window.scrollTo({top:0,behavior:'smooth'});};
   }).catch(()=>fail('detail','Нет связи с ботом.'));
 }
