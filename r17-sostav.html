@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>По составу</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Unbounded:wght@600&display=swap" rel="stylesheet">
+<style>
+
+:root{--pu:#8153EC;--pu-d:#6a3fd6;--lv:#EFEAFF;--lv2:#E3DAFF;--ln:#D9CCFF;--ink:#1d1b26;--grey:#737373;--ok:#1f9d6b;--ok-bg:#e3f6ee;--bad:#e0475b;--bad-bg:#fde8eb;--bg:#f7f5ff;--card:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Montserrat,system-ui,sans-serif;font-weight:500}
+.wrap{max-width:720px;margin:0 auto;padding:24px 16px 48px}
+.back{display:inline-flex;gap:6px;color:var(--pu);font-weight:600;font-size:14px;text-decoration:none;margin-bottom:14px}
+.head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.head h1{font-family:Unbounded,Montserrat,sans-serif;font-weight:600;color:var(--pu);font-size:24px;margin:0}
+.head span{color:#be9fff;font-size:15px}
+.line{height:3px;width:220px;border-radius:2px;background:linear-gradient(90deg,var(--pu),#c553ec);margin-bottom:22px}
+.card{background:var(--card);border-radius:18px;padding:24px;box-shadow:0 2px 0 var(--ln),0 10px 30px rgba(129,83,236,.08)}
+.pill{display:inline-block;font-family:Unbounded,Montserrat,sans-serif;font-size:13px;color:var(--pu);background:var(--lv);border:1.5px solid var(--pu);border-radius:7px;padding:4px 10px;box-shadow:3px -2px 0 var(--lv2)}
+label{display:block;font-weight:600;margin:18px 0 6px}
+input.name{width:100%;font:inherit;font-size:16px;padding:12px 14px;border:1.5px solid var(--ln);border-radius:12px;outline:none}
+input.name:focus{border-color:var(--pu)}
+.rules{margin:16px 0 0;padding-left:20px;line-height:1.6}
+.rules b{color:var(--pu)}
+.btn{font:inherit;font-weight:700;font-size:16px;border:0;border-radius:12px;padding:13px 22px;cursor:pointer;background:var(--pu);color:#fff}
+.btn:hover{background:var(--pu-d)}
+.btn.ghost{background:var(--lv);color:var(--pu)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:20px}
+.err{color:var(--bad);font-size:14px;margin-top:8px;min-height:18px}
+.top{display:flex;justify-content:space-between;align-items:center;font-size:14px;color:var(--grey);margin-bottom:8px}
+.bar{height:8px;background:var(--lv);border-radius:6px;overflow:hidden;margin-bottom:18px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--pu),#c553ec);width:0;transition:width .3s}
+.lvl{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--pu);background:var(--lv);padding:4px 9px;border-radius:20px}
+.q{text-align:center;margin:4px 0 10px;color:var(--grey);font-size:15px}
+.el{display:flex;justify-content:center;align-items:center;gap:14px;margin:6px 0 20px}
+.sym{font-size:44px;font-weight:700;color:var(--pu);background:var(--lv);border-radius:14px;padding:6px 16px;box-shadow:inset 0 -3px 0 var(--pu);line-height:1.2}
+.sym sup{font-size:.45em}
+.el small{display:block;color:var(--grey);font-size:14px}
+.el b{font-size:18px}
+/* layers */
+.scheme{display:flex;align-items:flex-start;justify-content:center;gap:6px;font-weight:700}
+.nuc{color:var(--pu);font-size:24px;height:84px;display:flex;align-items:center;margin-right:2px}
+.shell{display:flex;flex-direction:column;align-items:center;gap:6px}
+.arc{align-self:flex-start;width:23px;height:84px;border-right:3px solid var(--pu);border-radius:0 50% 50% 0 / 0 50% 50% 0;opacity:.55}
+.shell .cell{width:46px;height:44px;font-size:20px}
+.cell{width:56px;height:52px;text-align:center;font:700 22px Montserrat,sans-serif;border:1.5px solid var(--ln);border-radius:12px;outline:none;color:var(--ink);background:#fff}
+.cell:focus{border-color:var(--pu)}
+.cell.right{border-color:var(--ok);background:var(--ok-bg)}
+.cell.wrong{border-color:var(--bad);background:var(--bad-bg)}
+.lwrap{overflow-x:auto;padding:4px 2px 8px;-webkit-overflow-scrolling:touch}
+.ladder{--c:32px;display:grid;grid-template-columns:repeat(19,var(--c));grid-auto-rows:var(--c);width:max-content;margin:0 auto}
+.ll{display:flex;align-items:center;justify-content:flex-end;padding-right:5px;font-weight:700;font-size:13px;color:var(--ink);white-space:nowrap}
+.orb{width:var(--c);height:var(--c);border:0;outline:1.5px solid var(--pu);outline-offset:-.75px;background:#fff;font:700 16px Montserrat,sans-serif;color:var(--pu);cursor:pointer;padding:0;letter-spacing:-2px;display:grid;place-items:center}
+.orb:hover{background:var(--lv)}
+.orb .ar{height:80%;width:auto;stroke:currentColor;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.orb .pair{display:flex;gap:1px;height:100%;align-items:center;justify-content:center}
+.orb:focus-visible{outline:3px solid #c553ec;z-index:1}
+.orb:disabled{cursor:default}
+.orb.right{outline-color:var(--ok);background:var(--ok-bg);color:var(--ok);z-index:1}
+.orb.wrong{outline-color:var(--bad);background:var(--bad-bg);color:var(--bad);z-index:2}
+.ll.right{color:var(--ok)} .ll.wrong{color:var(--bad)}
+.mini{--c:20px;margin-top:10px}
+.mini .orb{font-size:11px;outline-color:var(--ok);color:var(--ok);background:#fff;letter-spacing:-1px}
+.mini .ll{font-size:10px;padding-right:3px}
+.swipe{display:none;font-size:12px;color:var(--grey);text-align:center}
+@media (max-width:560px){.ladder{--c:26px}.orb{font-size:13px}.swipe{display:block}}
+/* config */
+.subs{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
+.sub{display:flex;flex-direction:column;align-items:center;gap:4px}
+.sub span{font-weight:700;font-size:16px}
+.sub em{font-style:normal;font-size:11px;color:var(--grey)}
+.sub .cell{width:100%;max-width:58px;height:48px;font-size:20px}
+.order{font-size:12px;color:var(--grey);text-align:center;margin-top:8px}
+.preview{text-align:center;font-size:20px;font-weight:600;margin-top:14px;min-height:30px;letter-spacing:.3px}
+.fb{margin-top:18px;border-radius:12px;padding:14px 16px;line-height:1.55;display:none}
+.fb.ok{display:block;background:var(--ok-bg)} .fb.bad{display:block;background:var(--bad-bg)}
+.fb b.h{display:block;margin-bottom:2px}
+.fb.ok b.h{color:var(--ok)} .fb.bad b.h{color:var(--bad)}
+.hint{font-size:13px;color:var(--grey);margin-top:12px;text-align:center}
+.res-name{font-size:18px;font-weight:700}
+.res-meta{color:var(--grey);font-size:14px;margin-top:4px}
+.score{display:flex;align-items:center;gap:20px;margin:22px 0;flex-wrap:wrap}
+.score .big{font-family:Unbounded,Montserrat,sans-serif;font-size:64px;color:var(--pu);line-height:1}
+.score .big small{font-size:.45em;color:var(--grey)}
+.score .verdict{font-size:18px;font-weight:700}
+.score .pct{color:var(--grey);font-size:14px;margin-top:4px}
+.grid{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin-bottom:20px}
+.grid div{aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff}
+.grid .g{background:var(--ok)} .grid .r{background:var(--bad)}
+.mist h3{font-size:15px;margin:0 0 8px;color:var(--pu)}
+.mist table{width:100%;border-collapse:collapse;font-size:14px}
+.mist td,.mist th{border:1px solid var(--ln);padding:6px 8px;text-align:left;vertical-align:top}
+.mist td{overflow-wrap:anywhere}
+.mist th{background:var(--lv);color:var(--pu)}
+.mist .no{color:var(--bad);font-weight:600} .mist .yes{color:var(--ok);font-weight:600}
+.perfect{background:var(--ok-bg);color:var(--ok);font-weight:700;border-radius:12px;padding:12px 16px}
+.foot{font-size:12px;color:var(--grey);margin-top:16px}
+.hidden{display:none}
+@media (max-width:560px){
+  .subs{grid-template-columns:repeat(4,1fr)}
+  .card{padding:18px}
+  .cell{width:48px;height:48px;font-size:20px}
+  .score .big{font-size:52px}
+  .grid{gap:4px}
+}
+
+.levels{display:grid;gap:10px;margin-top:16px}
+.lv-btn{display:flex;align-items:center;gap:14px;text-align:left;font:inherit;background:#fff;border:1.5px solid var(--ln);border-radius:14px;padding:14px 16px;cursor:pointer;color:var(--ink)}
+.lv-btn:hover{border-color:var(--pu)}
+.lv-btn .dot{flex:none;width:40px;height:40px;border-radius:12px;background:var(--lv);color:var(--pu);display:grid;place-items:center;font-weight:700;font-size:16px}
+.lv-btn b{display:block;font-size:17px}
+.lv-btn small{display:block;color:var(--grey);font-size:13px;line-height:1.4;margin-top:2px}
+.lv-note{color:var(--grey);font-size:13px;margin:14px 0 0}
+.nm{text-align:center;font-size:24px;font-weight:700;color:var(--pu);background:var(--lv);border-radius:14px;padding:12px 16px;box-shadow:inset 0 -3px 0 var(--pu);margin:4px auto 16px;width:fit-content;max-width:100%}
+.fin{display:block;width:100%;font:600 30px Montserrat,sans-serif;line-height:1.6;height:auto;min-height:72px;text-align:center;padding:8px 12px 14px;overflow:visible;border:1.5px solid var(--ln);border-radius:14px;outline:none;color:var(--ink);letter-spacing:.5px;background:#fff}
+.fin:focus{border-color:var(--pu)}
+.fin.right{border-color:var(--ok);background:var(--ok-bg)} .fin.wrong{border-color:var(--bad);background:var(--bad-bg)}
+.kb{margin-top:12px;display:grid;gap:6px}
+.kb .r{display:grid;grid-template-columns:repeat(8,1fr);gap:5px}
+.key{font:600 15px Montserrat,sans-serif;padding:9px 0;border-radius:9px;border:1px solid var(--ln);background:#fff;color:var(--ink);cursor:pointer;min-width:0}
+.key:hover{border-color:var(--pu)}
+.key.d{background:var(--lv);color:var(--pu)}
+.key.w{grid-column:span 2;background:#f1edfb;font-size:13px}
+.mist td{overflow-wrap:anywhere}
+@media (max-width:400px){.key{font-size:14px;padding:8px 0}.fin{font-size:26px}.nm{font-size:20px}}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}.opts.one{grid-template-columns:1fr}
+.opt{font:600 15px Montserrat,sans-serif;padding:13px 8px;border-radius:14px;border:1.5px solid var(--ln);background:#fff;color:var(--ink);cursor:pointer;line-height:1.3;min-width:0;overflow-wrap:anywhere;hyphens:auto;text-align:center}
+.opt:hover{border-color:var(--pu)}
+.opt.sel{background:var(--pu);border-color:var(--pu);color:#fff}
+.opt.right{background:var(--ok);border-color:var(--ok);color:#fff}
+.opt.wrong{background:var(--bad);border-color:var(--bad);color:#fff}
+.opt.missed{border:2px dashed var(--ok);color:var(--ok)}
+.opt.dim{opacity:.45}
+.opt:disabled{cursor:default}
+.rx{text-align:center;font-size:20px;font-weight:700;color:var(--pu);background:var(--lv);border-radius:14px;padding:12px 14px;box-shadow:inset 0 -3px 0 var(--pu);line-height:1.4;margin:0 0 16px;overflow-wrap:anywhere}
+.rx.rxe{font-size:19px;color:var(--ink)}
+.banner{background:#fff6d6;color:#8a6500;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600;margin-bottom:10px;text-align:center}
+.step{font-size:14px;font-weight:700;color:var(--pu);margin:16px 0 8px;text-align:center}
+.fb .eq{display:block;font-weight:700;margin:4px 0;overflow-wrap:anywhere}
+.fb .tags{display:block;color:var(--grey);font-size:13px}
+.ar{display:inline-flex;flex-direction:column;align-items:center;line-height:1;vertical-align:middle;margin:0 2px}
+.ar small{font-size:10px;font-weight:600;color:var(--grey);order:-1}
+.tabb{border:1.5px solid var(--ln);border-radius:14px;padding:12px;margin-top:10px}
+.tabb.ege{border-color:var(--pu);background:#faf8ff}
+.tabh{display:flex;align-items:center;gap:12px}
+.tabh .dot{flex:none;width:36px;height:36px;border-radius:11px;background:var(--lv);color:var(--pu);display:grid;place-items:center;font-weight:700}
+.tabh b{display:block;font-size:16px}.tabh small{display:block;color:var(--grey);font-size:12.5px;line-height:1.35;margin-top:2px}
+.tabl{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.tabl .lv-btn{padding:9px 10px;border-radius:11px;gap:6px;flex-wrap:wrap;min-width:0}
+.tabl .lv-btn b{font-size:14px}.tabl .lv-btn small{font-size:11.5px;margin-top:0}
+.tabl .lv-btn .lv-best{font-size:12px;padding:3px 6px}
+@media (max-width:400px){.rx{font-size:17px}.rx.rxe{font-size:16px}.opt{font-size:14px}}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← Все тренажёры</a>
+  <div class="head"><h1>По составу</h1><span id="sub">задание 17</span></div>
+  <div class="line"></div>
+
+  <section id="start" class="card">
+    <span class="pill">Выбери уровень</span>
+    <div id="tabs"></div>
+    <p class="lv-note">Лёгкий — дано уравнение реакции (без подсказок над стрелкой). Средний — реакция словами, как на ЕГЭ. В каждом заходе 15 реакций.</p>
+  </section>
+
+  <section id="quiz" class="card hidden">
+    <div class="top"><span id="num"></span><span class="lvl" id="lvl"></span></div>
+    <div class="bar"><i id="bar"></i></div>
+    <div class="banner hidden" id="banner">Выбери все подходящие типы — правильных может быть несколько</div>
+    <div class="q" id="qt"></div>
+    <div class="rx" id="rx"></div>
+    <div class="opts" id="opts"></div>
+    <div class="step hidden" id="step">Верно! А какой это вид ОВР?</div>
+    <div class="opts one hidden" id="opts2"></div>
+    <div class="err" id="qErr"></div>
+    <div class="fb" id="fb"></div>
+    <div class="row" style="justify-content:center">
+      <button class="btn hidden" id="check">Проверить</button>
+      <button class="btn hidden" id="next">Дальше</button>
+    </div>
+  </section>
+
+  <section id="result" class="card hidden">
+    <span class="pill">Результат</span>
+    <div style="margin-top:16px"><div class="res-name" id="rName"></div><div class="res-meta" id="rMeta"></div></div>
+    <div class="score"><div class="big" id="rScore"></div><div><div class="verdict" id="rVerdict"></div><div class="pct" id="rPct"></div></div></div>
+    <div class="grid" id="rGrid"></div>
+    <div class="mist" id="rMist"></div>
+    <div class="row"><button class="btn" id="againLvl">Ещё раз</button><button class="btn ghost" id="toLevels">К вкладкам</button></div>
+  </section>
+</div>
+
+<script>
+// Реакция: слова | уравнение ({условия} над стрелкой, ⇄ — обратимая) | признаки:
+// состав (S соединения, D разложения, Z замещения, O обмена; n — нейтрализация, g — гидролиз),
+// ОВР (0 — нет, 1m межмол., 1v внутримол., 1d диспропорц., 1s сопропорц., 1- без вида), тепловой (+ экзо, - эндо),
+// катализатор (1/0), фазы (1 гомо, 2 гетеро), обратимость (1/0). Пусто — признак не спрашиваем.
+const RAW=`сера и кислород|S + O₂ →{t°} SO₂|S,1m,+,0,2,0
+фосфор и кислород|4P + 5O₂ →{t°} 2P₂O₅|S,1m,+,0,2,0
+железо и сера|Fe + S →{t°} FeS|S,1m,+,0,2,0
+железо и хлор|2Fe + 3Cl₂ →{t°} 2FeCl₃|S,1m,+,0,2,0
+водород и хлор|H₂ + Cl₂ →{hν} 2HCl|S,1m,+,0,1,
+водород и фтор|H₂ + F₂ → 2HF|S,1m,+,0,1,
+водород и иод|H₂ + I₂ ⇄{t°} 2HI|S,1m,-,0,1,1
+азот и кислород|N₂ + O₂ ⇄{эл. разряд} 2NO|S,1m,-,0,1,1
+азот и водород|N₂ + 3H₂ ⇄{Fe, t°, p} 2NH₃|S,1m,+,1,1,1
+оксид серы(IV) и кислород|2SO₂ + O₂ ⇄{V₂O₅, t°} 2SO₃|S,1m,+,1,1,1
+хлорид железа(II) и хлор|2FeCl₂ + Cl₂ → 2FeCl₃|S,1m,+,0,2,0
+гидроксид железа(II) и пероксид водорода|2Fe(OH)₂ + H₂O₂ → 2Fe(OH)₃|S,1m,+,0,2,0
+железо и хлорид железа(III) (р-р)|Fe + 2FeCl₃(р-р) → 3FeCl₂|S,1s,+,0,2,0
+горение фосфина с образованием ортофосфорной кислоты|PH₃ + 2O₂ → H₃PO₄|S,1m,+,0,1,0
+оксид кальция и вода|CaO + H₂O → Ca(OH)₂|S,0,+,0,2,0
+оксид бария и вода|BaO + H₂O → Ba(OH)₂|S,0,+,0,2,0
+оксид натрия и вода|Na₂O + H₂O → 2NaOH|S,0,+,0,2,0
+оксид фосфора(V) и вода|P₂O₅ + 3H₂O → 2H₃PO₄|S,0,+,0,2,0
+оксид серы(VI) и вода|SO₃ + H₂O → H₂SO₄|S,0,+,0,1,0
+оксид серы(IV) и вода|SO₂ + H₂O ⇄ H₂SO₃|S,0,+,0,2,1
+оксид углерода(IV) и вода|CO₂ + H₂O ⇄ H₂CO₃|S,0,+,0,2,1
+оксид кальция и оксид углерода(IV)|CaO + CO₂ ⇄ CaCO₃|S,0,+,0,2,1
+аммиак (г) и хлороводород (г)|NH₃(г) + HCl(г) ⇄ NH₄Cl|S,0,+,0,1,1
+аммиак (г) и азотная кислота (р-р)|NH₃(г) + HNO₃(р-р) ⇄ NH₄NO₃|S,0,+,0,2,1
+оксид углерода(IV) (г) и гидроксид калия (р-р)|CO₂(г) + KOH(р-р) → KHCO₃|S,0,+,0,2,0
+разложение оксида ртути(II)|2HgO →{t°} 2Hg + O₂|D,1v,-,0,,0
+разложение оксида серебра(I)|2Ag₂O →{t°} 4Ag + O₂|D,1v,-,0,,0
+разложение перманганата калия|2KMnO₄ →{t°} K₂MnO₄ + MnO₂ + O₂|D,1v,-,0,,0
+разложение нитрата калия|2KNO₃ →{t°} 2KNO₂ + O₂|D,1v,-,0,,0
+нагревание нитрата меди(II)|2Cu(NO₃)₂ →{t°} 2CuO + 4NO₂ + O₂|D,1v,-,0,,0
+разложение нитрата магния|2Mg(NO₃)₂ →{t°} 2MgO + 4NO₂ + O₂|D,1v,-,0,,0
+разложение нитрата серебра|2AgNO₃ →{t°} 2Ag + 2NO₂ + O₂|D,1v,-,0,,0
+разложение нитрата железа(III)|4Fe(NO₃)₃ →{t°} 2Fe₂O₃ + 12NO₂ + 3O₂|D,1v,-,0,,0
+разложение дихромата аммония|(NH₄)₂Cr₂O₇ →{t°} N₂ + Cr₂O₃ + 4H₂O|D,1v,+,0,,0
+разложение нитрита аммония|NH₄NO₂ →{t°} N₂ + 2H₂O|D,1-,,0,,0
+разложение нитрата аммония|NH₄NO₃ →{t°} N₂O + 2H₂O|D,1-,,0,,0
+разложение хлората калия (MnO₂)|2KClO₃ →{MnO₂, t°} 2KCl + 3O₂|D,1v,,1,,0
+разложение хлората калия без катализатора|4KClO₃ →{t°} KCl + 3KClO₄|D,1d,+,0,,0
+разложение пероксида водорода (MnO₂)|2H₂O₂ →{MnO₂} 2H₂O + O₂|D,1d,,1,,0
+разложение карбоната кальция|CaCO₃ ⇄{t°} CaO + CO₂|D,0,-,0,,1
+разложение хлорида аммония|NH₄Cl ⇄{t°} NH₃ + HCl|D,0,-,0,,1
+разложение гидроксида железа(III)|2Fe(OH)₃ →{t°} Fe₂O₃ + 3H₂O|D,0,-,0,,0
+разложение гидроксида меди(II)|Cu(OH)₂ →{t°} CuO + H₂O|D,0,-,0,,0
+разложение гидроксида магния|Mg(OH)₂ →{t°} MgO + H₂O|D,0,-,0,,0
+разложение гидроксида алюминия|2Al(OH)₃ →{t°} Al₂O₃ + 3H₂O|D,0,-,0,,0
+разложение кремниевой кислоты|H₂SiO₃ →{t°} SiO₂ + H₂O|D,0,-,0,,0
+разложение гидрокарбоната кальция|Ca(HCO₃)₂ ⇄{t°} CaCO₃ + CO₂ + H₂O|D,0,-,0,,1
+разложение гидрокарбоната натрия|2NaHCO₃ ⇄{t°} Na₂CO₃ + CO₂ + H₂O|D,0,-,0,,1
+разложение карбоната аммония|(NH₄)₂CO₃ ⇄{t°} 2NH₃ + CO₂ + H₂O|D,0,-,0,,1
+натрий и вода|2Na + 2H₂O → 2NaOH + H₂↑|Z,1m,+,0,2,0
+калий и вода|2K + 2H₂O → 2KOH + H₂↑|Z,1m,+,0,2,0
+кальций и вода|Ca + 2H₂O → Ca(OH)₂ + H₂↑|Z,1m,+,0,2,0
+цинк и соляная кислота|Zn + 2HCl → ZnCl₂ + H₂↑|Z,1m,+,0,2,0
+магний и соляная кислота|Mg + 2HCl → MgCl₂ + H₂↑|Z,1m,+,0,2,0
+алюминий и соляная кислота|2Al + 6HCl → 2AlCl₃ + 3H₂↑|Z,1m,+,0,2,0
+железо и сульфат меди(II) (р-р)|Fe + CuSO₄(р-р) → FeSO₄ + Cu|Z,1m,+,0,2,0
+цинк и сульфат меди(II) (р-р)|Zn + CuSO₄(р-р) → ZnSO₄ + Cu|Z,1m,+,0,2,0
+алюминий и сульфат меди(II) (р-р)|2Al + 3CuSO₄(р-р) → Al₂(SO₄)₃ + 3Cu|Z,1m,+,0,2,0
+алюминий и хлорид меди(II) (р-р)|2Al + 3CuCl₂(р-р) → 2AlCl₃ + 3Cu|Z,1m,+,0,2,0
+цинк и хлорид железа(II) (р-р)|Zn + FeCl₂(р-р) → ZnCl₂ + Fe|Z,1m,+,0,2,0
+хлорид железа(III) (р-р) и магний (изб.)|2FeCl₃(р-р) + 3Mg → 3MgCl₂ + 2Fe|Z,1m,+,0,2,0
+алюминий и оксид железа(III)|2Al + Fe₂O₃ →{t°} Al₂O₃ + 2Fe|Z,1m,+,0,2,0
+алюминий и оксид хрома(III)|2Al + Cr₂O₃ →{t°} Al₂O₃ + 2Cr|Z,1m,+,0,2,0
+оксид меди(II) и водород|CuO + H₂ →{t°} Cu + H₂O|Z,1m,,0,2,0
+хлор и иодид калия (р-р)|Cl₂ + 2KI(р-р) → 2KCl + I₂|Z,1m,+,0,2,0
+горение сероводорода в недостатке кислорода|2H₂S + O₂ → 2S + 2H₂O|Z,1m,+,0,1,0
+силикат натрия (р-р) и азотная кислота|Na₂SiO₃(р-р) + 2HNO₃ → H₂SiO₃↓ + 2NaNO₃|O,0,+,0,1,0
+хлорид бария (р-р) и сульфат натрия (р-р)|BaCl₂(р-р) + Na₂SO₄(р-р) → BaSO₄↓ + 2NaCl|O,0,+,0,1,0
+нитрат серебра (р-р) и хлорид натрия (р-р)|AgNO₃(р-р) + NaCl(р-р) → AgCl↓ + NaNO₃|O,0,+,0,1,0
+хлорид меди(II) (р-р) и гидроксид натрия (р-р)|CuCl₂(р-р) + 2NaOH(р-р) → Cu(OH)₂↓ + 2NaCl|O,0,+,0,1,0
+сульфат меди(II) (р-р) и гидроксид калия (р-р)|CuSO₄(р-р) + 2KOH(р-р) → Cu(OH)₂↓ + K₂SO₄|O,0,+,0,1,0
+нитрат железа(III) (р-р) и гидроксид натрия (р-р)|Fe(NO₃)₃(р-р) + 3NaOH(р-р) → Fe(OH)₃↓ + 3NaNO₃|O,0,+,0,1,0
+карбонат натрия (р-р) и серная кислота|Na₂CO₃(р-р) + H₂SO₄ → Na₂SO₄ + CO₂↑ + H₂O|O,0,+,0,1,0
+карбонат кальция и соляная кислота|CaCO₃ + 2HCl → CaCl₂ + CO₂↑ + H₂O|O,0,+,0,2,0
+оксид цинка и соляная кислота|ZnO + 2HCl → ZnCl₂ + H₂O|O,0,+,0,2,0
+оксид магния и серная кислота|MgO + H₂SO₄ → MgSO₄ + H₂O|O,0,+,0,2,0
+оксид меди(II) и серная кислота|CuO + H₂SO₄ → CuSO₄ + H₂O|O,0,+,0,2,0
+хлорид аммония и гидроксид кальция (при нагревании)|2NH₄Cl + Ca(OH)₂ →{t°} CaCl₂ + 2NH₃↑ + 2H₂O|O,0,,0,2,0
+гидроксид натрия (р-р) и соляная кислота|NaOH(р-р) + HCl → NaCl + H₂O|On,0,+,0,1,0
+гидроксид калия (р-р) и азотная кислота|KOH(р-р) + HNO₃ → KNO₃ + H₂O|On,0,+,0,1,0
+гидроксид натрия (р-р) и серная кислота|2NaOH(р-р) + H₂SO₄ → Na₂SO₄ + 2H₂O|On,0,+,0,1,0
+гидроксид бария (р-р) и азотная кислота|Ba(OH)₂(р-р) + 2HNO₃ → Ba(NO₃)₂ + 2H₂O|On,0,+,0,1,0
+гидроксид бария (р-р) и серная кислота|Ba(OH)₂(р-р) + H₂SO₄ → BaSO₄↓ + 2H₂O|On,0,+,0,1,0
+гидроксид магния и соляная кислота|Mg(OH)₂ + 2HCl → MgCl₂ + 2H₂O|On,0,+,0,2,0
+гидроксид железа(II) и соляная кислота|Fe(OH)₂ + 2HCl → FeCl₂ + 2H₂O|On,0,+,0,2,0
+гидроксид алюминия и соляная кислота|Al(OH)₃ + 3HCl → AlCl₃ + 3H₂O|On,0,+,0,2,0
+гидроксид меди(II) и серная кислота|Cu(OH)₂ + H₂SO₄ → CuSO₄ + 2H₂O|On,0,+,0,2,0
+карбид кальция и вода|CaC₂ + 2H₂O → Ca(OH)₂ + C₂H₂↑|Og,0,+,0,2,0
+гидролиз сульфида алюминия|Al₂S₃ + 6H₂O → 2Al(OH)₃↓ + 3H₂S↑|Og,0,,0,2,0
+нитрид натрия и вода|Na₃N + 3H₂O → 3NaOH + NH₃↑|Og,0,,0,2,0
+гидролиз нитрита натрия|NaNO₂ + H₂O ⇄ HNO₂ + NaOH|Og,0,,0,1,1
+гидролиз карбоната натрия|Na₂CO₃ + H₂O ⇄ NaHCO₃ + NaOH|Og,0,,0,1,1
+манганат калия и хлор|2K₂MnO₄ + Cl₂ → 2KMnO₄ + 2KCl|,1m,,0,2,0
+обжиг пирита|4FeS₂ + 11O₂ →{t°} 2Fe₂O₃ + 8SO₂|,1m,+,0,2,0
+окисление аммиака кислородом до оксида азота(II)|4NH₃ + 5O₂ →{Pt, t°} 4NO + 6H₂O|,1m,+,1,1,0
+горение аммиака|4NH₃ + 3O₂ →{t°} 2N₂ + 6H₂O|,1m,+,0,1,0
+аммиак и оксид меди(II)|2NH₃ + 3CuO →{t°} 3Cu + N₂ + 3H₂O|,1m,,0,2,0
+оксид азота(IV) и вода|2NO₂ + H₂O → HNO₂ + HNO₃|,1d,,0,2,0
+сера и гидроксид калия (р-р)|3S + 6KOH(р-р) →{t°} 2K₂S + K₂SO₃ + 3H₂O|,1d,,0,2,0
+сероводород и оксид серы(IV)|2H₂S + SO₂ → 3S + 2H₂O|,1s,,0,1,0`;
+const BANK=RAW.trim().split('\n').map(l=>{const [w,eq,tg]=l.split('|');const [c,o,q,k,f,r]=tg.split(',');
+  return {w,eq,c:c?c[0]:null,sub:c&&c[1]||null,o:o===''?null:o[0]==='1',ov:o&&o[1]&&o[1]!=='-'?o[1]:null,q:q||null,k:k===''?null:k==='1',f:f||null,r:r===''?null:r==='1'};});
+const C={S:'соединения',D:'разложения',Z:'замещения',O:'обмена'};
+const CDEF={S:'Из нескольких веществ образуется одно.',D:'Из одного сложного вещества образуется несколько.',Z:'Простое вещество замещает атомы одного из элементов в сложном.',O:'Два сложных вещества обмениваются составными частями.'};
+const OV={m:'межмолекулярная',v:'внутримолекулярная',d:'диспропорционирование',s:'сопропорционирование'};
+const TABS=[
+ {id:'c',t:'По составу',s:'соединение · разложение · замещение · обмен',q:'К какому типу относится реакция?',has:x=>x.c,opts:x=>['S','D','Z','O'].map(k=>({k,l:C[k]})),ans:x=>x.c},
+ {id:'o',t:'ОВР или нет',s:'+ вид ОВР',q:'Это окислительно-восстановительная реакция?',has:x=>x.o!==null,opts:()=>[{k:'1',l:'ОВР'},{k:'0',l:'не ОВР'}],ans:x=>x.o?'1':'0'},
+ {id:'q',t:'Тепловой эффект',s:'экзотермическая · эндотермическая',q:'Какая это реакция по тепловому эффекту?',has:x=>x.q,opts:()=>[{k:'+',l:'экзотермическая'},{k:'-',l:'эндотермическая'}],ans:x=>x.q},
+ {id:'k',t:'Катализатор',s:'каталитическая · некаталитическая',q:'Нужен ли катализатор?',has:x=>x.k!==null,opts:()=>[{k:'1',l:'каталитическая'},{k:'0',l:'некаталитическая'}],ans:x=>x.k?'1':'0'},
+ {id:'f',t:'Фазы',s:'гомогенная · гетерогенная',q:'Гомогенная или гетерогенная?',has:x=>x.f,opts:()=>[{k:'1',l:'гомогенная'},{k:'2',l:'гетерогенная'}],ans:x=>x.f},
+ {id:'r',t:'Обратимость',s:'обратимая · необратимая',q:'Обратимая или необратимая?',has:x=>x.r!==null,opts:()=>[{k:'1',l:'обратимая'},{k:'0',l:'необратимая'}],ans:x=>x.r?'1':'0'},
+ {id:'e',t:'Как на ЕГЭ',s:'одна реакция — отметь все подходящие типы',ege:true},
+];
+const LVLN=['лёгкий','средний'];
+const $=id=>document.getElementById(id);
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const tg=window.Telegram&&window.Telegram.WebApp;const inTG=!!(tg&&tg.initData);
+if(tg){try{tg.ready();tg.expand();if(inTG&&tg.BackButton){tg.BackButton.show();tg.BackButton.onClick(()=>{location.href='index.html';});}}catch(e){}}
+
+// уравнение: полное (с условиями) и «лёгкое» (без условий, без ⇄ и стрелок ↑↓)
+const fullEq=e=>esc(e).replace(/(→|⇄)\{([^}]*)\}/g,'<span class="ar">$1<small>$2</small></span>');
+const easyEq=e=>esc(e.replace(/\{[^}]*\}/g,'').replace(/⇄/g,'→').replace(/[↑↓]/g,''));
+// все признаки реакции одной строкой
+function allTags(x){const a=[];
+  if(x.c)a.push(C[x.c]+(x.sub==='n'?' (нейтрализации)':x.sub==='g'?' (гидролиза)':''));
+  if(x.o!==null)a.push(x.o?'ОВР'+(x.ov?' ('+OV[x.ov]+')':''):'не ОВР');
+  if(x.q)a.push(x.q==='+'?'экзотермическая':'эндотермическая');
+  if(x.k!==null)a.push(x.k?'каталитическая':'некаталитическая');
+  if(x.f)a.push(x.f==='1'?'гомогенная':'гетерогенная');
+  if(x.r!==null)a.push(x.r?'обратимая':'необратимая');
+  return a.join(' · ');}
+
+// для «Как на ЕГЭ»: 5 вариантов, из них 2–3 верных, по одному из каждой группы признаков
+function egeOpts(x){
+  const g=[];const pick=a=>a[Math.floor(Math.random()*a.length)];
+  if(x.c)g.push({t:C[x.c],f:pick(Object.keys(C).filter(k=>k!==x.c).map(k=>C[k]))});
+  if(x.sub)g.push({t:x.sub==='n'?'нейтрализации':'гидролиза',f:null});
+  if(x.o!==null){const ox=Math.random()<.7?'окислительно-восстановительная':'без изменения степеней окисления';g.push({t:(ox==='окислительно-восстановительная')===x.o?ox:null,f:(ox==='окислительно-восстановительная')!==x.o?ox:null});}
+  if(x.q)g.push({t:x.q==='+'?'экзотермическая':'эндотермическая',f:x.q==='+'?'эндотермическая':'экзотермическая'});
+  if(x.k!==null)g.push({t:x.k?'каталитическая':null,f:x.k?null:'каталитическая'});
+  if(x.f)g.push({t:x.f==='1'?'гомогенная':'гетерогенная',f:x.f==='1'?'гетерогенная':'гомогенная'});
+  if(x.r!==null)g.push({t:x.r?'обратимая':'необратимая',f:x.r?'необратимая':'обратимая'});
+  const trues=shuffle(g.filter(z=>z.t)),out=[];
+  const nT=Math.min(trues.length,2+Math.floor(Math.random()*2));
+  const used=new Set();
+  trues.slice(0,nT).forEach(z=>{out.push({l:z.t,ok:true});used.add(z);});
+  shuffle(g.filter(z=>!used.has(z)&&z.f)).forEach(z=>{if(out.length<5){out.push({l:z.f,ok:false});used.add(z);}});
+  trues.slice(nT).forEach(z=>{if(out.length<5)out.push({l:z.t,ok:true});});
+  if(!out.some(o=>!o.ok))out.push({l:x.sub==='n'?'гидролиза':'нейтрализации',ok:false});
+  return shuffle(out.slice(0,5));
+}
+// выборка: в двоичных вкладках стараемся поровну обоих ответов
+function sample(tab,n){
+  const pool=BANK.filter(tab.has);const groups={};
+  shuffle(pool).forEach(x=>{const a=tab.ans(x);(groups[a]=groups[a]||[]).push(x);});
+  const keys=Object.keys(groups),out=[];let i=0;
+  while(out.length<n&&keys.some(k=>groups[k].length)){const k=keys[i++%keys.length];if(groups[k].length)out.push(groups[k].pop());}
+  return shuffle(out);
+}
+let tasks=[],cur=0,answered=false,log=[],t0=0,curLevel=1,tab=null,easy=true,sel=[],stage=1;
+const levelId=(ti,lv)=>ti*2+lv; // ti 0..6, lv 1..2
+const ONLY=0;
+function start(level){
+  curLevel=level;tab=TABS[ONLY];easy=level===1;
+  tasks=tab.ege?shuffle(BANK).slice(0,12).map(x=>({x,opts:egeOpts(x)})):sample(tab,15).map(x=>({x,opts:tab.opts(x)}));
+  cur=0;log=[];t0=Date.now();
+  $('start').classList.add('hidden');$('result').classList.add('hidden');$('quiz').classList.remove('hidden');window.scrollTo(0,0);show();
+}
+const qHtml=t=>easy?'<span class="eqn">'+easyEq(t.x.eq)+'</span>':esc(t.x.w);
+const qText=t=>easy?easyEq(t.x.eq).replace(/&[a-z]+;/g,' '):t.x.w;
+function show(){
+  const t=tasks[cur];answered=false;sel=[];stage=1;
+  $('num').textContent='Задание '+(cur+1)+' из '+tasks.length;$('lvl').textContent=LVLN[easy?0:1];
+  $('bar').style.width=(cur/tasks.length*100)+'%';
+  $('banner').classList.toggle('hidden',!tab.ege);
+  $('qt').textContent=tab.ege?'К каким типам можно отнести реакцию?':tab.q;
+  $('rx').innerHTML=qHtml(t);$('rx').className='rx'+(easy?' rxe':'');
+  $('opts').className='opts'+(tab.ege?' one':'');
+  $('opts').innerHTML=t.opts.map((o,i)=>'<button class="opt" type="button" data-i="'+i+'">'+esc(o.l)+'</button>').join('');
+  document.querySelectorAll('#opts .opt').forEach(b=>b.onclick=()=>pickOpt(+b.dataset.i));
+  $('step').textContent='Верно! А какой это вид ОВР?';$('step').classList.add('hidden');$('opts2').classList.add('hidden');$('opts2').innerHTML='';
+  $('qErr').textContent='';$('fb').className='fb';$('next').classList.add('hidden');$('check').classList.toggle('hidden',!tab.ege);
+}
+function pickOpt(i){
+  if(answered)return;const t=tasks[cur];
+  if(tab.ege){const k=sel.indexOf(i);k<0?sel.push(i):sel.splice(k,1);$('qErr').textContent='';
+    document.querySelectorAll('#opts .opt').forEach((b,j)=>b.classList.toggle('sel',sel.includes(j)));return;}
+  if(stage!==1)return;
+  sel=[i];const o=t.opts[i];
+  // ОВР: если верно ответили «ОВР» и у реакции есть вид — второй шаг
+  if(tab.id==='o'&&o.k==='1'&&t.x.o&&t.x.ov){
+    stage=2;document.querySelectorAll('#opts .opt').forEach((b,j)=>{b.disabled=true;b.classList.add(j===i?'right':'dim');});
+    $('step').classList.remove('hidden');$('opts2').classList.remove('hidden');
+    $('opts2').innerHTML=['m','v','d','s'].map(k=>'<button class="opt" type="button" data-k="'+k+'">'+OV[k]+'</button>').join('');
+    document.querySelectorAll('#opts2 .opt').forEach(b=>b.onclick=()=>{if(answered)return;sel=[i,b.dataset.k];check();});
+    return;}
+  check();
+}
+function check(){
+  if(answered)return;const t=tasks[cur];let ok,user,correct;
+  if(tab.ege){
+    if(!sel.length){$('qErr').textContent='Отметь хотя бы один вариант';return;}
+    ok=t.opts.every((o,j)=>o.ok===sel.includes(j));
+    document.querySelectorAll('#opts .opt').forEach((b,j)=>{b.disabled=true;b.classList.remove('sel');const o=t.opts[j],s=sel.includes(j);
+      if(s)b.classList.add(o.ok?'right':'wrong');else if(o.ok)b.classList.add('missed');else b.classList.add('dim');});
+    user=sel.map(j=>t.opts[j].l).join(', ');correct=t.opts.filter(o=>o.ok).map(o=>o.l).join(', ');
+    const miss=t.opts.filter((o,j)=>o.ok&&!sel.includes(j)).map(o=>o.l),extra=t.opts.filter((o,j)=>!o.ok&&sel.includes(j)).map(o=>o.l);
+    var head=ok?'Верно!':'Неверно.'+(miss.length?' Не отмечено: '+miss.join(', ')+'.':'')+(extra.length?' Лишнее: '+extra.join(', ')+'.':'');
+  }else{
+    const o=t.opts[sel[0]],a=tab.ans(t.x);
+    if(stage===2){const vk=sel[1];ok=vk===t.x.ov;
+      document.querySelectorAll('#opts2 .opt').forEach(b=>{b.disabled=true;const k=b.dataset.k;b.classList.add(k===t.x.ov?'right':k===vk?'wrong':'dim');});
+      user='ОВР, '+OV[vk];correct='ОВР, '+OV[t.x.ov];$('step').textContent='А какой это вид ОВР?';
+    }else{ok=o.k===a;
+      document.querySelectorAll('#opts .opt').forEach((b,j)=>{b.disabled=true;const k=t.opts[j].k;b.classList.add(k===a?'right':j===sel[0]?'wrong':'dim');});
+      user=o.l;correct=t.opts.find(z=>z.k===a).l+(tab.id==='o'&&t.x.o&&t.x.ov?', '+OV[t.x.ov]:'');}
+    var head=ok?'Верно!':'Неверно. Правильно: '+correct;
+  }
+  answered=true;log.push({t,ok,user,correct});
+  const why=tab.id==='c'?'<br>'+CDEF[t.x.c]:'';
+  $('fb').className='fb '+(ok?'ok':'bad');
+  $('fb').innerHTML='<b class="h">'+esc(head)+'</b><span class="eq">'+fullEq(t.x.eq)+'</span><span class="tags">'+esc(allTags(t.x))+'</span>'+why;
+  $('check').classList.add('hidden');$('next').classList.remove('hidden');
+  $('next').textContent=cur===tasks.length-1?'Посмотреть результат':'Дальше';$('next').focus();
+}
+function next(){if(!answered)return;cur++;cur<tasks.length?show():finish();}
+function finish(){
+  const right=log.filter(x=>x.ok).length,n=log.length,sec=Math.round((Date.now()-t0)/1000);
+  const d=new Date(),pad=x=>String(x).padStart(2,'0');
+  $('quiz').classList.add('hidden');$('result').classList.remove('hidden');
+  $('rName').textContent=tab.t+' · '+LVLN[easy?0:1]+' уровень';
+  $('rMeta').textContent=pad(d.getDate())+'.'+pad(d.getMonth()+1)+'.'+d.getFullYear()+', '+pad(d.getHours())+':'+pad(d.getMinutes())+' · время: '+Math.floor(sec/60)+' мин '+pad(sec%60)+' с';
+  $('rScore').innerHTML=right+'<small>/'+n+'</small>';
+  const p=Math.round(right/n*100);
+  $('rVerdict').textContent=p===100?'Идеально!':p>=90?'Отлично!':p>=75?'Хорошо':p>=50?'Нужно потренироваться':'Повтори теорию и попробуй снова';
+  $('rPct').textContent=p+'% правильных ответов';
+  $('rGrid').innerHTML=log.map((x,i)=>'<div class="'+(x.ok?'g':'r')+'">'+(i+1)+'</div>').join('');
+  const bad=log.map((x,i)=>({...x,i})).filter(x=>!x.ok);
+  $('rMist').innerHTML=bad.length===0?'<div class="perfect">Ни одной ошибки</div>':
+    '<h3>Ошибки</h3><table><tr><th>№</th><th>Реакция</th><th>Ответ</th><th>Верно</th></tr>'+
+    bad.map(x=>'<tr><td>'+(x.i+1)+'</td><td>'+esc(x.t.x.w)+'</td><td class="no">'+esc(x.user)+'</td><td class="yes">'+esc(x.correct)+'</td></tr>').join('')+'</table>';
+  window.scrollTo(0,0);
+}
+$('tabs').innerHTML='<div class="tabl">'+[1,2].map(lv=>'<button class="lv-btn" type="button" data-l="'+lv+'"><span><b>'+(lv===1?'Лёгкий':'Средний')+'</b><small>'+(lv===1?'уравнения':'словами')+'</small></span></button>').join('')+'</div>';
+document.querySelectorAll('.lv-btn').forEach(b=>b.onclick=()=>start(+b.dataset.l));
+$('check').onclick=check;$('next').onclick=next;
+$('againLvl').onclick=()=>start(curLevel);
+$('toLevels').onclick=()=>{$('sub').textContent='задание 17';$('result').classList.add('hidden');$('quiz').classList.add('hidden');$('start').classList.remove('hidden');window.scrollTo(0,0);};
+document.addEventListener('keydown',e=>{if($('quiz').classList.contains('hidden')||e.key!=='Enter')return;if(!answered&&!tab.ege)return;e.preventDefault();answered?next():check();});
+
+/* ---- полоска прогресса и сохранение результата ---- */
+(function(){
+  const API=(()=>{let a=new URLSearchParams(location.search).get('api');try{if(a)sessionStorage.setItem('api',a);else a=sessionStorage.getItem('api');}catch(e){}return a;})();
+  const css=document.createElement('style');
+  css.textContent='#quiz .bar{display:none}.seg{display:flex;gap:3px;margin:-4px 0 4px}.seg i{flex:1;height:8px;border-radius:4px;background:#ece8f8;transition:background .2s}.seg i.g{background:#1f9d6b}.seg i.r{background:#e0475b}.seg i.c{background:#8153EC;box-shadow:0 0 0 2px #d9ccff}.segl{text-align:right;font-size:12px;color:#737373;margin-bottom:14px}.saved{margin:0 0 16px;background:#e3f6ee;color:#1f9d6b;border-radius:10px;padding:8px 12px;font-size:14px;font-weight:600;display:inline-block}';
+  document.head.appendChild(css);
+  const bar=document.querySelector('#quiz .bar');const seg=document.createElement('div');seg.className='seg';const segl=document.createElement('div');segl.className='segl';
+  bar.after(seg);seg.after(segl);
+  function paint(){if(!tasks.length)return;seg.innerHTML=tasks.map((t,i)=>'<i class="'+(i<log.length?(log[i].ok?'g':'r'):(i===cur?'c':''))+'"></i>').join('');const left=tasks.length-log.length;segl.textContent=left?'осталось '+left:'все задания пройдены';}
+  const _show=show;show=function(){_show.apply(this,arguments);paint();};
+  const _check=check;check=function(){_check.apply(this,arguments);paint();};
+  const _finish=finish;finish=function(){_finish.apply(this,arguments);save();};
+  document.getElementById('check').onclick=()=>check();
+  function save(){
+    const old=document.querySelector('#result .saved');if(old)old.remove();
+    const tg=window.Telegram&&window.Telegram.WebApp;if(!API||!tg||!tg.initData)return;
+    const mistakes=[...document.querySelectorAll('#rMist tr')].slice(1).map(tr=>tr.cells[1]?tr.cells[1].innerText.replace(/\s+/g,' ').trim():'').filter(Boolean);
+    const body={initData:tg.initData,file:location.pathname.split('/').pop(),level:curLevel,score:log.filter(x=>x.ok).length,total:log.length,sec:Math.round((Date.now()-t0)/1000),mistakes};
+    fetch(API.replace(/\/$/,'')+'/api/result',{method:'POST',headers:{'content-type':'text/plain'},body:JSON.stringify(body)})
+      .then(r=>r.json()).then(j=>{if(j.ok){const d=document.createElement('div');d.className='saved';d.textContent='✓ Результат сохранён';const sc=document.querySelector('#result .score');if(sc)sc.after(d);}}).catch(()=>{});
+  }
+})();
+</script>
+<script>
+/* ---- лучший результат ученика на кнопках уровней ---- */
+(function(){
+  const tg=window.Telegram&&window.Telegram.WebApp;
+  let API=null;try{API=new URLSearchParams(location.search).get('api')||sessionStorage.getItem('api');}catch(e){}
+  if(!API||!tg||!tg.initData)return;
+  const file=location.pathname.split('/').pop();
+  const css=document.createElement('style');
+  css.textContent='.lv-best{margin-left:auto;flex:none;font-size:13px;font-weight:700;border-radius:8px;padding:5px 9px;white-space:nowrap;font-variant-numeric:tabular-nums}.lv-best.c3{background:#e3f6ee;color:#1f9d6b}.lv-best.c2{background:#fff2dc;color:#c27a00}.lv-best.c1{background:#fde8eb;color:#e0475b}';
+  document.head.appendChild(css);
+  function paint(rows){
+    const best={};
+    rows.filter(r=>r.file===file).forEach(r=>{const b=best[r.level];if(!b||r.score/r.total>b.score/b.total)best[r.level]=r;});
+    document.querySelectorAll('.lv-btn[data-l]').forEach(btn=>{
+      let s=btn.querySelector('.lv-best');const b=best[btn.dataset.l];
+      if(!b){if(s)s.remove();return;}
+      if(!s){s=document.createElement('span');btn.appendChild(s);}
+      const p=b.score*100/b.total;
+      s.className='lv-best '+(p>=85?'c3':p>=60?'c2':'c1');
+      s.textContent=(p>=70?'✓ ':'')+b.score+'/'+b.total;
+      s.title='Твой лучший результат';
+    });
+  }
+  function load(){
+    fetch(API.replace(/\/$/,'')+'/api/me',{method:'POST',headers:{'content-type':'text/plain'},body:JSON.stringify({initData:tg.initData})})
+      .then(r=>r.json()).then(d=>{if(d.ok)paint(d.rows||[]);}).catch(()=>{});
+  }
+  load();
+  const tl=document.getElementById('toLevels');if(tl)tl.addEventListener('click',load);
+})();
+</script>
+</body>
+</html>
